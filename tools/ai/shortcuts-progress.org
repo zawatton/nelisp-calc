@@ -1,0 +1,16 @@
+#+TITLE: NeLisp Calc keyboard shortcut compatibility
+
+* S1 Native keyboard routing
+** S1.1 Route documented memory, mode, editing and available math shortcuts with correct modifier handling
+#+NOTE: Scope is the implemented subset documented in README.org, not complete Windows Calculator keyboard parity. Sixteen hidden native cases check exact backend tokens and per-key signal returns in both themes.
+evidence: target/shortcut-native-positive.log sha256=A692DC52F5C5F7DC561B8CF2434FCFBDFCDBDFC12ED589D37DE7FB7BB63BC91E
+evidence: target/shortcut-probes/a2cd36cd23084df39b57f81e0045e368/results.jsonl sha256=A137320A49417E03179FA6B64173E9865671EC6EB84F9FA89A4C4CA10BAD85AB
+** S1.2 Preserve native text editing, unknown key propagation and existing calculation behavior with negative controls
+#+NOTE: An instrumented original local handler consumes unknown x with handled=1 and zero backend actions, violating the expected handled=0 contract. New receipts verify focused entry text/selection unchanged, unknown key propagation and capture/bubble ownership with no duplicate dispatch. Physical OS event propagation/default editing remain unverified.
+evidence: target/shortcut-old-review.json sha256=5A8C47DB43C25BCFA998DD5864C9C65C0DB5BEAD2A33DFE2D4FA61891D2A9AB3
+evidence: target/shortcut-legacy-keyboard.log sha256=4D939C961201B84CCEBA976041D33F2C3C0CDD3E07EAB323C28A732DE1C0B7FF
+evidence: target/shortcut-legacy-mouse.log sha256=6EAD7A4B9949B545929526AD634B7195D0D91372A952E5073A073CC96911F31E
+** S1.3 End-to-end hidden GTK key signals drive genuine standalone calculations and memory in both themes
+evidence: target/shortcut-native-positive.log sha256=A692DC52F5C5F7DC561B8CF2434FCFBDFCDBDFC12ED589D37DE7FB7BB63BC91E
+evidence: target/shortcut-review.json sha256=4BE74F317348750BA449996265DD07D4720C1681D99A70B4024F2B09E5CE0368
+evidence: target/shortcut-package-acceptance.json sha256=FB627797E9278A31E6D6AEC64D985741D4E3F879ED0271E7A45DA2AFA2DA9721

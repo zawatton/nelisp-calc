@@ -32,7 +32,7 @@ Copy-BundleFile $guiSource 'app/target/nelisp-calc.exe' ('app/target/' + $pointe
 Copy-BundleFile (Join-Path $dev 'nelisp/target/nelisp.exe') 'nelisp/target/nelisp.exe' 'nelisp/target/nelisp.exe'
 Copy-BundleTree (Join-Path $source 'lisp') 'app/lisp' 'app/lisp'
 Copy-BundleTree (Join-Path $source 'src') 'app/src' 'app/src'
-foreach ($file in @('build.el', 'README.org')) { Copy-BundleFile (Join-Path $source $file) ('app/' + $file) ('app/' + $file) }
+foreach ($file in @('build.el', 'keyboard.el', 'gestures.el', 'README.org')) { Copy-BundleFile (Join-Path $source $file) ('app/' + $file) ('app/' + $file) }
 foreach ($file in @('launch.ps1', 'update-rates.ps1')) {
     $scriptSource = if ($file -eq 'launch.ps1' -and $LauncherSnapshot) { $LauncherSnapshot } else { Join-Path $source ('tools/' + $file) }
     Copy-BundleFile $scriptSource ('app/tools/' + $file) ('app/tools/' + $file)

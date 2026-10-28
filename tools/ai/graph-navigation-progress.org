@@ -1,0 +1,18 @@
+#+TITLE: NeLisp Calc graph pan and zoom
+
+* S1 Graph viewport navigation
+** S1.1 Pan and zoom validated viewport bounds while retaining genuine Calc expression sampling
+#+NOTE: Production remains 101 genuine Calc samples. Navigation is seven native buttons plus graph-only Ctrl+keypad +/-; drag/wheel and implicit plots are outside this slice.
+evidence: target/graph-navigation-standalone.log sha256=7F05B9178C59C8CDDD900CC69AF9E1B02650507D81D166F3D2F73BDC911B4C40
+evidence: target/navigation-worker-proof/results.jsonl sha256=61E1105076F67FE14ECCE4FD567E878A9FC1EBB57AADD3D09807CE9EEF6A0B1A
+** S1.2 Reject invalid or collapsed ranges without corrupting the last valid viewport and preserve existing graph/currency behavior
+#+NOTE: The identical independent 26-check contract rejects six invalid ranges without changing accepted range, expression or plot. Old source fails the reversed-range preservation assertion. All 16 original graph/currency checks remain unchanged and pass after the edit.
+evidence: target/graph-navigation-review-old.stderr sha256=AC9EFF8BDC7E0A321B5CEB6CD50E2AC9E85F3FCA6DC973ACA4A7481D65AFA160
+evidence: target/graph-navigation-review-new.log sha256=7737FBCF557329B829B4324FC5C7CE3E71652C7F6580707E66ACA49FC80530EF
+evidence: target/navigation-regression-Standalone.log sha256=49131A4AEEF6639D748415B366F3FBA33CB61D38E0E1FE7EEA1C5556C3195B88
+evidence: target/navigation-regression-Host.log sha256=E1CC333C7FAF43580E8260854C80E1DF62B32CD144C456ACA92E0EB7F26FD19C
+** S1.3 End-to-end hidden native controls and graph keyboard zoom update range fields and rendered graph in both themes
+#+NOTE: Four worker native cases cover all controls, reset, both themes, key focus and rejection. Three independent parent cases verify projection, pixels, exact native fields, no duplicate key command and a 32-character accepted bound. Relocated bundled runtime repeats Light navigation; no OS presentation or clipboard use.
+evidence: target/navigation-worker-proof/results.jsonl sha256=61E1105076F67FE14ECCE4FD567E878A9FC1EBB57AADD3D09807CE9EEF6A0B1A
+evidence: target/graph-navigation-native-review.json sha256=8D1F6B973B56BB12DC5DA4F6266F2A84A5318C630C046D45E6C576C619EE7D38
+evidence: target/graph-navigation-package-acceptance.json sha256=F17E2A0A26FD20ED1EF4D97095A7286764CF6994AF1ED515A5B7F56DE90AAC46

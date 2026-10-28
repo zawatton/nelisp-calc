@@ -10,6 +10,7 @@ if (Test-Path -LiteralPath $guiPointer) {
     $guiBin = Join-Path $artifactRoot $relativeGui
 }
 $savedEnvironment = @{}
+$savedEnvironment['NELISP_CALC_THEME_FILE'] = $env:NELISP_CALC_THEME_FILE
 foreach ($name in @('PATH', 'NELISP_CALC_TARGET', 'NELISP_CALC_KEYS', 'NELISP_CALC_BURST', 'NELISP_CALC_MOUSE', 'NELISP_CALC_SMOKE', 'NELISP_CALC_COMMANDS', 'NELISP_CALC_HIDDEN', 'NELISP_CALC_TODAY', 'NELISP_CALC_REFRESH_COMMAND', 'NELISP_CALC_RATES')) {
     $savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
 }
@@ -20,6 +21,18 @@ try {
     $bundledDll = @((Join-Path $projectRoot 'runtime/bin'), (Join-Path $projectRoot 'runtime'), (Join-Path (Split-Path $projectRoot -Parent) 'runtime/bin')) | Where-Object { Test-Path -LiteralPath (Join-Path $_ 'libgtk-4-1.dll') } | Select-Object -First 1
     $mingwBin = if ($env:NELISP_CALC_DLL_DIR) { $env:NELISP_CALC_DLL_DIR } elseif ($env:MINGW_BIN) { $env:MINGW_BIN } elseif ($bundledDll) { $bundledDll } else { Split-Path (Get-Command gcc -ErrorAction Stop).Source -Parent }
     $env:PATH = "$mingwBin;$env:PATH"
+    if (-not $env:NELISP_CALC_THEME_FILE) {
+        if ($Smoke -or $InteractionKeys -or $Commands) {
+            $env:NELISP_CALC_THEME_FILE = Join-Path $artifactRoot ('theme-fixtures/' + [Guid]::NewGuid().ToString('N') + '/theme.txt')
+        } else {
+            $env:NELISP_CALC_THEME_FILE = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'NeLispCalc/theme.txt'
+        }
+    }
+    $themeDirectory = Split-Path ([IO.Path]::GetFullPath($env:NELISP_CALC_THEME_FILE)) -Parent
+    if (-not (Test-Path -LiteralPath $themeDirectory)) {
+        try { New-Item -ItemType Directory -Path $themeDirectory -Force | Out-Null }
+        catch { Write-Warning 'Appearance preference directory unavailable; calculation remains available.' }
+    }
     if (-not $env:NELISP_CALC_TODAY) { $env:NELISP_CALC_TODAY = [DateTime]::UtcNow.ToString('yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture) }
     if (-not (Test-Path -LiteralPath $guiBin)) { throw 'Run tools/build.ps1 first' }
     if ($Smoke) {
@@ -71,13 +84,30 @@ try {
         $responseLines = @(Get-Content -LiteralPath $responseFile)
         $expectedCount = if ($Commands) {
             $commandMode = 'standard'; $acknowledgements = 0
+            $keyReceipts = @()
+            $keyReceiptPath = Join-Path $targetRoot 'key-receipts.txt'
+            if (Test-Path -LiteralPath $keyReceiptPath) { $keyReceipts = @(Get-Content -LiteralPath $keyReceiptPath) }
+            $keyIndex = 0
             foreach ($command in $Commands) {
+                if ($command -match '^ui:gesture:(mode|busy):') { $acknowledgements++; continue }
+                if ($command -match '^ui:key:') {
+                    if ($keyIndex -ge $keyReceipts.Count) { throw 'Missing native key signal receipt' }
+                    $receiptFields = $keyReceipts[$keyIndex++].Split("`t")
+                    if ($receiptFields[2] -notin @('0','1')) { throw 'Invalid native key handled return' }
+                    if ($receiptFields.Count -lt 9 -or $receiptFields[8] -notmatch '^[0-6]$') { throw 'Invalid native key mode receipt' }
+                    $commandMode = @('standard','scientific','programmer','convert','date','graph','currency')[[int]$receiptFields[8]]
+                    $acknowledgements += [int]$receiptFields[2]
+                    continue
+                }
                 if ($command -match '^mode:(.+)$') { $commandMode = $Matches[1] }
                 if ($command -match '^ui:') { continue }
                 $acknowledgements++
                 # Ordinary typed text sets the input and computes only on Enter.
                 if ($commandMode -in @('programmer', 'convert', 'currency') -and $command -notmatch ':' -and $command -notmatch '^([0-9A-F]|add|sub|mul|div|equals|dot|clear|backspace|sign)$') { $acknowledgements++ }
             }
+            if ($keyIndex -ne $keyReceipts.Count) { throw 'Unexpected native key signal receipt' }
+            $gestureSubmissions = Join-Path $targetRoot 'gesture-submissions.txt'
+            if (Test-Path -LiteralPath $gestureSubmissions) { $acknowledgements += @(Get-Content -LiteralPath $gestureSubmissions).Count }
             $acknowledgements
         } elseif ($InteractionBurst) { [Math]::Min(64, $InteractionKeys.Length) } else { $InteractionKeys.Length }
         if ($responseLines.Count -lt 3 -or [int]$responseLines[2] -ne $expectedCount) { throw "Native GTK acknowledgement count mismatch; expected $expectedCount" }
@@ -96,7 +126,8 @@ try {
     }
     if ($interactionPassed) {
         foreach ($name in @('response.txt', 'requests.txt', 'native-interaction.png')) {
-            Copy-Item -LiteralPath (Join-Path $targetRoot $name) -Destination (Join-Path $artifactRoot $name) -Force
+            $sessionArtifact = Join-Path $targetRoot $name
+            if (Test-Path -LiteralPath $sessionArtifact) { Copy-Item -LiteralPath $sessionArtifact -Destination (Join-Path $artifactRoot $name) -Force }
         }
         foreach ($name in @('graph.txt', 'memory.txt', 'history.txt')) {
             $sessionArtifact = Join-Path $targetRoot $name

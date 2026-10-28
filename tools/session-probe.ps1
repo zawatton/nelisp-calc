@@ -17,4 +17,4 @@ Write-Output ('SESSION-ELAPSED-SECONDS:' + $clock.Elapsed.TotalSeconds.ToString(
 Get-Content $log -Tail 4
 Get-Content $stderr -Tail 4
 if ($null -eq $process.ExitCode -or $process.ExitCode -ne 0) { throw 'Session process failed' }
-if (!(Select-String -Path $log -SimpleMatch 'SESSION-PASS:41' -Quiet)) { throw 'Missing session completion sentinel' }
+if (!(Select-String -Path $log -Pattern '^SESSION-PASS:68$' -Quiet)) { throw 'Missing session completion sentinel (41 original +27 multiple-memory checks)' }

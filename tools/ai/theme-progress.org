@@ -1,0 +1,11 @@
+#+TITLE: NeLisp Calc light and dark themes
+
+* S1 Native appearance switching
+** S1.1 Switch both Cairo calculator/graph colors and native GTK controls
+evidence: target/theme-acceptance.json sha256=347F43274EC39B3E49BFEE682A3D93FE55F017B9B908A15825D1F540730A4423
+** S1.2 Restore a validated saved selection without altering user settings in tests
+evidence: target/theme-acceptance.json sha256=347F43274EC39B3E49BFEE682A3D93FE55F017B9B908A15825D1F540730A4423
+evidence: target/theme-package-acceptance.json sha256=7D7268CED8D838227A81D4F49A4B864026137F47FD56575B63F575333B167A0B
+** S1.3 End-to-end hidden theme toggles preserve real standalone calculations and graph rendering
+evidence: target/theme-positive.log sha256=39CD90D3272846CE3A1236EBACF91EC66D9EAA2C8FA92C4BCF28FAAB7E11F0AE
+evidence: target/theme-package-acceptance.json sha256=7D7268CED8D838227A81D4F49A4B864026137F47FD56575B63F575333B167A0B

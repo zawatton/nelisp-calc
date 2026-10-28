@@ -29,7 +29,7 @@ $driverSource = @'
 param([string]$Bundle)
 $ErrorActionPreference = 'Stop'
 $env:PATH = (Join-Path $Bundle 'runtime/bin') + ';' + $env:SystemRoot + '\System32;' + $env:SystemRoot + ';' + (Split-Path (Get-Process -Id $PID).Path -Parent)
-foreach ($name in @('MINGW_BIN', 'NELISP_BIN', 'NELISP_CALC_ENGINE_ROOT', 'NELISP_CALC_VENDOR', 'NELISP_EMACS_DIR', 'NELISP_CALC_SERVER', 'NELISP_CALC_TARGET', 'NELISP_CALC_KEYS', 'NELISP_CALC_COMMANDS')) { [Environment]::SetEnvironmentVariable($name, $null, 'Process') }
+foreach ($name in @('MINGW_BIN', 'NELISP_BIN', 'NELISP_CALC_ENGINE_ROOT', 'NELISP_CALC_VENDOR', 'NELISP_EMACS_DIR', 'NELISP_CALC_SERVER', 'NELISP_CALC_TARGET', 'NELISP_CALC_KEYS', 'NELISP_CALC_COMMANDS', 'NELISP_CALC_THEME_FILE')) { [Environment]::SetEnvironmentVariable($name, $null, 'Process') }
 & (Join-Path $Bundle 'portable-launch.ps1') -Hidden -Commands @('2', 'add', '3', 'equals') -ExpectedDisplay '5' -TimeoutSeconds 90
 & (Join-Path $Bundle 'portable-launch.ps1') -Hidden -Commands @('mode:scientific', 'eval:sqrt(2)') -ExpectedDisplay '1.41421356237' -TimeoutSeconds 90
 'PACKAGE-NATIVE-E2E-PASS'

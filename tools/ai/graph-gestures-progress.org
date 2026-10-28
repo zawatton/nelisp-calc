@@ -1,0 +1,16 @@
+#+TITLE: NeLisp Calc graph drag and wheel gestures
+
+* S1 Bounded native graph gestures
+** S1.1 Translate graph drag completion and coalesced wheel input into validated viewport changes with real Calc sampling
+#+NOTE: Primary drag commits once on release. Wheel input is normalized by GTK, coalesced for 200 ms and capped at four steps per submitted batch. Genuine Calc sample default remains 101.
+evidence: target/gestures-worker-core-Standalone.log sha256=7BFF7B76BCC7E213EAF38CA06964FFD3DC1E827E0D69086D90EDC497F5FAA48A
+evidence: target/graph-gestures-review-new.log sha256=A6C32898AC37232FEAF667B95D61AD97D8B44A0A0221A762FD891C3BC55AD5D6
+** S1.2 Bound requests during bursts or busy state and preserve mode isolation, accepted range and existing navigation
+#+NOTE: Old code fails the same independent zoom contract. Worker fixtures cover cancellation, nonfinite ABI values, actual scaled allocation, opposite over-cap bursts, busy state and mode switches; all existing graph/currency tests remain unchanged and pass.
+evidence: target/graph-gestures-review-old.stderr sha256=9895C60154B62FA88811324543ED39342CF02445C1646B0A13D8288B88C3980D
+evidence: target/gestures-worker-proof/results.jsonl sha256=71DA43E6A1B81FAC5BF6DB535598EFB83C15E5F0F1C1183B4A4EDB3D72C414FA
+evidence: target/gestures-regression-Standalone.log sha256=49131A4AEEF6639D748415B366F3FBA33CB61D38E0E1FE7EEA1C5556C3195B88
+** S1.3 End-to-end hidden native gesture signals update graph, range fields and both theme renderings
+#+NOTE: Parent native tests in Dark and Light verify actual signals, fields, exact two gesture submissions, projection and curve pixels. Relocated bundled runtime repeats Light gestures with sanitized PATH. Physical-device recognition and whole-window inspection remain unverified while the user is working.
+evidence: target/graph-gestures-native-review.json sha256=C3E813820F4C66E7E71E13C477763DD50587388B783692032B7F852E5DD70BEF
+evidence: target/graph-gestures-package-acceptance.json sha256=79767EC059A9CE41EC62EC52FECAF399B3D89C2198BF7E3EA2D5435F8C0EDF32

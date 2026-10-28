@@ -65,8 +65,15 @@ templates; use =tools/launch.ps1= for the development checkout.
 - Date: dedicated ISO start/end dates and a day offset, with difference and
   day-addition buttons. Gregorian leap years and the range 0001..9999 are checked.
 - Graph: a real Calc expression such as =x^2=, sampled at 101 points, with
-  editable range fields, clipping and discontinuity breaks. Undefined samples
-  are not joined.
+  editable range fields, clipping and discontinuity breaks. Zoom in/out halves
+  or doubles both spans around the viewport center. Left/right/up/down moves
+  the viewport by one quarter of its current span; Reset view restores
+  =-10:10:-10:10=. Navigation retains the accepted expression and can render the
+  stored default =x^2= before the first plot. Undefined samples are not joined.
+  Rejected ranges restore the accepted range fields and retain the plot.
+  Bounds accept decimal literals with at most 32 characters, exponent magnitude
+  at most 50, absolute magnitude at most =1e50= (nonzero at least =1e-50=),
+  spans from =1e-20= to =1e50=, and distinct bounds at 12 significant digits.
 - Currency: native currency selectors using a validated ECB reference-rate
   cache. The rate date and stale-cache state remain visible.
 
@@ -92,6 +99,23 @@ cache cases are checked. The source is the
 [[https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html][ECB reference-rate publication]]
 and its official daily XML feed.
 
+* Appearance
+
+The native =Appearance= selector switches between =Dark= and =Light=.
+Calculator text, keypad, graph background/axes/curve and native GTK controls
+use matching palettes. The current calculation and memory/history remain active.
+
+The selected appearance is restored at startup from
+=%LOCALAPPDATA%/NeLispCalc/theme.txt=. A missing or invalid preference selects
+Dark. =NELISP_CALC_THEME_FILE= provides an explicit alternative path. If the
+preference cannot be saved, the selected colors still apply and the selector
+shows a save-failure tooltip.
+
+The appearance probe uses isolated files under =target/= and never presents
+or focuses its native windows. It verifies actual GTK computed colors and
+provider scheme, Cairo pixel colors, restart persistence, arithmetic during
+switching, graph colors, invalid preferences and write-failure feedback.
+
 * Architecture and compatibility
 
 #+begin_example
@@ -114,6 +138,18 @@ validation. The backend validates this explicit clock input.
 
 Memory and history snapshots stay inside the owning instance's session
 directory. Internal graph samples and memory arithmetic do not fill history.
+MS stores a new value at the front of the native Stored values selector and
+selects it. MR, M+ and M- use the selected value; Remove selected deletes only
+that value and selects its next neighbor (or the previous last value).
+MC clears all stored values. M+ and M- start from zero when memory is empty.
+Up to 100 values are retained; a full collection rejects MS explicitly without
+eviction, while selected values remain editable. Memory accepts genuine Calc
+real decimal results in Standard, Scientific, Converter and Currency modes.
+Invalid selection or arithmetic leaves the collection and selection intact.
+The internal =memory:select:N= and =memory:remove= tokens back native controls;
+users select values directly from the dropdown. =memory.txt= continues to
+contain the selected value; =memories.txt= and =memory-index.txt= publish the
+collection and selection for the owning frontend only.
 Initial startup and long computations show explicit busy state, with a
 90-second response deadline; genuine backend errors still display immediately.
 
@@ -137,6 +173,8 @@ the runtime's negative =%g= formatting defect.
 ./tools/advanced-gui-acceptance.ps1 -SelfTest
 ./tools/desktop-gui-acceptance.ps1
 ./tools/desktop-gui-acceptance.ps1 -SelfTest
+./tools/theme-probe.ps1
+./tools/memory-probe.ps1
 ./test/mailbox-snapshot.ps1
 #+end_src
 
@@ -170,6 +208,94 @@ PATH="/usr/bin:$PATH" bash ../../bin/progress-meter.sh --ledger tools/ai/calcula
 The ledger retains 12 criteria. Recorded evidence hashes avoid repeating
 passing expensive checks merely to redisplay the meter.
 
+The separate =tools/ai/theme-progress.org= ledger tracks the three appearance
+acceptance criteria. =tools/theme-probe.ps1 -IgnoreToggleForControl= is its
+negative control and must fail when switching is deliberately omitted.
+
+* Native keyboard shortcuts
+
+The implemented subset follows the [[https://raw.githubusercontent.com/microsoft/calculator/main/docs/ManualTests.md][Microsoft Calculator manual tests]].
+GTK reports whether each =key-pressed= callback handled the key; unknown or
+unsupported combinations return false. A single recognized shortcut submits
+one backend action. Caps Lock and Num Lock do not disable ordinary keys.
+
+| Context | Keys | Actions |
+|---------+------+---------|
+| Global | Alt+1 / 2 / 3 / 4 / 5 | Standard / Scientific / Programmer / Date / Graph |
+| Graph | Ctrl+keypad + / - | Zoom in / out, including while editing a field |
+| Global | Ctrl+M / P / Q / R / L | Store / add / subtract / recall / clear all memories |
+| Calculator | digits, + - * / . =, Return | Numeric entry and arithmetic |
+| Calculator | keypad digits, operators, decimal, Enter | Same numeric actions |
+| Calculator | Escape / Delete / Backspace / F9 | Clear / clear entry / delete last digit / sign |
+| Standard, Scientific | R / @ / % | Reciprocal / square root / percent |
+| Scientific | F3 / F4 | Degrees / radians |
+| Scientific | L / N / O / Q / S / T | log / ln / cos / square / sin / tan |
+| Scientific | Ctrl+N / ! / ^ | exp / factorial / power |
+| Programmer | F2 / F3 / F4 / F12 | 32 / 16 / 8 / 64 bit word |
+| Programmer | F5 / F6 / F7 / F8 | Hex / decimal / octal / binary |
+| Programmer | A-F, < >, \vert ~ & | Hex digits, shift left/right, OR/NOT/AND |
+
+Shifted letters are not aliases for unshifted scientific functions. Grad,
+pi, inverse-trig Shift shortcuts, programmer modulo, and other combinations
+outside this table remain unsupported. Ctrl/Alt/Super/Hyper/Meta combinations
+do not insert ordinary calculator digits or operators. Ctrl+Shift combinations
+do not alias the plain Ctrl actions.
+
+The global mode/memory controller runs in GTK's capture phase. The calculator
+controller runs in the bubble phase, after native controls, and ignores global
+modifier combinations to prevent duplicate actions.
+Editable focus keeps typing, selection, Delete, Backspace, Return and Ctrl+C/V
+with the native entry; global mode/memory shortcuts remain available.
+Clipboard callbacks are never invoked by the shortcut probes.
+
+=tools/shortcut-probe.ps1= drives genuine GTK =key-pressed= signals in windows
+that are never presented. Each receipt records the signal return, entry text
+and selection, controller phase and window ownership; backend request tokens
+and acknowledgements are checked separately. This tests callback routing and
+focus guards, not OS input injection or GTK's full event/default-editing path.
+Native entry editing under physical keyboard input remains unverified.
+
+* Graph drag and wheel navigation
+
+Primary-button drags start only inside the plotted rectangle (16..384 by
+190..540 in the 400 by 560 design). GTK logical coordinates and actual widget
+allocation scale together. A completed nonzero drag submits one viewport
+translation: right moves the curve right, and down moves the curve down.
+Updates, cancellation, outside starts, nonfinite/oversized offsets and starts
+while requests are pending do not render. Switching modes cancels gestures.
+
+The graph canvas consumes vertical wheel input. GTK's VERTICAL | DISCRETE
+controller normalizes smooth devices to wheel steps, avoiding confusion
+between surface-pixel and wheel units. A 200 ms quiet interval coalesces a
+burst into one center-preserving zoom, compatible with the buttons. Opposite
+deltas cancel; the final request is capped at four steps. One bounded net is
+retained while the backend is busy. A wheel gesture cancels an unfinished
+drag; a valid new drag cancels pending wheel input. Horizontal-only events
+are not consumed. Closing the window clears pending input.
+
+The backend accepts =graph:shift:DX:DY= with signed integer permille offsets
+bounded to +/-2000 on each axis (positive X right, positive Y up), and
+=graph:zoom:STEPS= with signed nonzero integer steps bounded to +/-4
+(positive zooms in). It validates and renders a candidate before committing
+the canonical range. Invalid tokens or unsupported viewport precision retain
+the expression, accepted range and plot, and show an error. Every sample
+continues through genuine GNU Calc; the default remains 101 samples.
+
+=tools/graph-gestures-probe.ps1 -Mode Host|Standalone= checks 28 core contracts.
+=tools/graph-gestures-native-probe.ps1= checks both themes, real hidden GTK
+allocation at 800 by 1120, native double-valued signal emission, controller
+ownership/button/phase/flags/grouping, drag cancellation and direction,
+bounded wheel bursts, opposite cancellation, busy state, and mode isolation.
+The =gesture-receipts.txt= TSV records each signal's handled result, active
+drag, accumulated millisteps, pending flag, queue length, acknowledgements,
+controller metadata and actual dimensions. =gesture-submissions.txt= records
+the exact gesture commands. Existing-session collection avoids repeating
+expensive plots after verifier-only changes.
+
+These probes emit genuine GTK signals through GValue and inspect native
+fields and plot data without presenting a window. They do not establish
+physical-device event recognition or whole-window visual fidelity.
+
 * Costs and remaining scope
 
 The graph kernel was reduced from 303 Calc evaluations per plot to 101.
@@ -180,8 +306,8 @@ An isolated exact-exponentiation comparison measured 1.0472 seconds for the
 old loop and 0.08156 seconds for squaring, using fresh standalone processes.
 
 Windows Calculator parity is not complete. Full Windows shortcut/unit-catalog
-equivalence, interactive graph pan/zoom and implicit-equation plotting remain
-outside this version. Memory currently has one slot. Whole-window visual
+equivalence and implicit-equation plotting remain
+outside this version. Whole-window visual
 review and actual system clipboard verification are deferred while the user
 is working; these are not reported as passing checks.
 

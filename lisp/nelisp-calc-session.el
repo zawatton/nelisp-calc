@@ -2,6 +2,9 @@
 
 (defvar nelisp-calc-session-directory nil)
 (defvar nelisp-calc-session-memory nil)
+(defvar nelisp-calc-session-memories nil)
+(defvar nelisp-calc-session-memory-index nil)
+(defconst nelisp-calc-session-memory-limit 100)
 (defvar nelisp-calc-session-history nil)
 (defconst nelisp-calc-session-history-limit 100)
 
@@ -14,6 +17,11 @@
 (defun nelisp-calc-session-publish ()
   (nelisp-calc-session-write "memory.txt" (if nelisp-calc-session-memory (concat nelisp-calc-session-memory "\n") ""))
   (let ((index 0) (text ""))
+    (dolist (value nelisp-calc-session-memories)
+      (setq text (concat text (format "%d\t%s\n" index value)) index (1+ index)))
+    (nelisp-calc-session-write "memories.txt" text))
+  (nelisp-calc-session-write "memory-index.txt" (if nelisp-calc-session-memory-index (number-to-string nelisp-calc-session-memory-index) "-1"))
+  (let ((index 0) (text ""))
     (dolist (entry nelisp-calc-session-history)
       (setq text (concat text (format "%d\t%s\t%s\n" index (car entry) (cdr entry))) index (1+ index)))
     (nelisp-calc-session-write "history.txt" text)))
@@ -21,7 +29,8 @@
   "Reset state when switching instance targets; never import another session."
   (let ((directory (expand-file-name (or (getenv "NELISP_CALC_TARGET") (expand-file-name "target" nelisp-calc-root)))))
     (unless (equal directory nelisp-calc-session-directory)
-      (setq nelisp-calc-session-directory directory nelisp-calc-session-memory nil nelisp-calc-session-history nil)
+      (setq nelisp-calc-session-directory directory nelisp-calc-session-memory nil nelisp-calc-session-history nil
+            nelisp-calc-session-memories nil nelisp-calc-session-memory-index nil)
       (nelisp-calc-session-publish))))
 (defun nelisp-calc-session-mode ()
   (if (symbolp nelisp-calc-mode) (symbol-name nelisp-calc-mode) nelisp-calc-mode))
@@ -42,13 +51,32 @@
         (error "A real decimal entry is required")) value)))
 ;;;###autoload
 (defun nelisp-calc-session-token (token)
-  "Handle the single memory slot and newest-first history indices."
+  "Handle selected memory values and newest-first history indices."
   (when (or (string-prefix-p "memory:" token) (string-prefix-p "history:" token))
     (condition-case err
         (progn
           (nelisp-calc-session-ensure)
           (cond
-           ((equal token "memory:clear") (setq nelisp-calc-session-memory nil nelisp-calc-status "memory:empty"))
+           ((member token '("memory:clear" "memory:clear-all"))
+            (setq nelisp-calc-session-memory nil nelisp-calc-session-memories nil
+                  nelisp-calc-session-memory-index nil nelisp-calc-status "memory:empty"))
+           ((string-match "\\`memory:select:\\([0-9]+\\)\\'" token)
+            (when (> (length (match-string 1 token)) 2) (error "Memory index absent"))
+            (let* ((index (string-to-number (match-string 1 token)))
+                   (value (nth index nelisp-calc-session-memories)))
+              (unless value (error "Memory index absent"))
+              (setq nelisp-calc-session-memory-index index nelisp-calc-session-memory value
+                    nelisp-calc-status "memory:selected")))
+           ((equal token "memory:remove")
+            (unless nelisp-calc-session-memory (error "Memory is empty"))
+            (let ((index 0) (values nil))
+              (dolist (value nelisp-calc-session-memories)
+                (unless (= index nelisp-calc-session-memory-index) (setq values (cons value values)))
+                (setq index (1+ index)))
+              (setq nelisp-calc-session-memories (nreverse values)
+                    nelisp-calc-session-memory-index (and nelisp-calc-session-memories (min nelisp-calc-session-memory-index (1- (length nelisp-calc-session-memories))))
+                    nelisp-calc-session-memory (and nelisp-calc-session-memory-index (nth nelisp-calc-session-memory-index nelisp-calc-session-memories))
+                    nelisp-calc-status "memory:removed")))
            ((equal token "history:clear") (setq nelisp-calc-session-history nil nelisp-calc-status "history:empty"))
            ((equal token "memory:recall")
             (unless nelisp-calc-session-memory (error "Memory is empty"))
@@ -64,8 +92,15 @@
                    (expression (if (equal token "memory:store") entry
                                  (concat "(" (or nelisp-calc-session-memory "0") ")"
                                          (if (equal token "memory:add") "+" "-") "(" entry ")"))))
-              (setq nelisp-calc-session-memory (nelisp-calc-session-number expression)
-                    nelisp-calc-status "memory:stored")))
+              (let ((value (nelisp-calc-session-number expression)))
+                (if (or (equal token "memory:store") (null nelisp-calc-session-memory))
+                    (progn
+                      (when (>= (length nelisp-calc-session-memories) nelisp-calc-session-memory-limit)
+                        (error "Memory full (100); remove a value first"))
+                      (setq nelisp-calc-session-memories (cons value nelisp-calc-session-memories)
+                            nelisp-calc-session-memory-index 0))
+                  (setcar (nthcdr nelisp-calc-session-memory-index nelisp-calc-session-memories) value))
+                (setq nelisp-calc-session-memory value nelisp-calc-status "memory:stored"))))
            (t (error "Unknown session token")))
           (nelisp-calc-session-publish))
       (error (setq nelisp-calc-display "ERROR" nelisp-calc-status (concat "session-error:" (error-message-string err)))))

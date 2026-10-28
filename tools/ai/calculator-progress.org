@@ -11,7 +11,8 @@ cmd: pwsh.exe -NoProfile -ExecutionPolicy Bypass -File tools/engine-probe.ps1 -M
 
 * S2 Standard Sumi calculator
 ** S2.1 Verify standard input state, percent, repeated equals and memory
-evidence: target/session-Standalone.log sha256=522D0EB59B033BA0C5CF95E4EFB0266C4E44FE796A9AE650AAF22273A1585167
+#+NOTE: All 41 original checks remain; 27 multiple-memory checks were added and passed on standalone NeLisp.
+evidence: target/session-Standalone.log sha256=7B2D9EBF7B7AB2296919D9AB29C63E6EA9D0D2813D0796A6369A0DCF4B5B9FA3
 evidence: target/desktop-memory-acceptance.json sha256=BCC6B310DB42A9B657DBC6F4C89456B260A74D01EC9D2E798BCD8604E30DC634
 ** S2.2 Build native Sumi calculator window with mouse and keyboard input
 evidence: target/gui-mouse-acceptance.json sha256=FCB807E4B08C6F7B7441B0B7948ED42FCAEBA4DB4ABA3B3D7B169FDCC78EB3E5

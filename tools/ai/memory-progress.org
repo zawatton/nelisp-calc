@@ -1,0 +1,15 @@
+#+TITLE: NeLisp Calc multiple memory values
+
+* S1 Multiple memory values
+** S1.1 Store, select, recall, update and remove independent memory values with genuine Calc arithmetic
+evidence: target/session-Standalone.log sha256=7B2D9EBF7B7AB2296919D9AB29C63E6EA9D0D2813D0796A6369A0DCF4B5B9FA3
+evidence: target/memory-review-new.log sha256=243734DE15071E105A4521F1B5EE2553F120DA909B1DF9B97C81E7EB1DFA6005
+** S1.2 Preserve session isolation, history and existing memory operations with regression and negative-control evidence
+#+NOTE: The identical independent contract fails on the old single-slot implementation: older value expected 1.25, actual 2.5. All 41 original checks are retained, with 27 added checks.
+evidence: target/session-Standalone.log sha256=7B2D9EBF7B7AB2296919D9AB29C63E6EA9D0D2813D0796A6369A0DCF4B5B9FA3
+evidence: target/memory-review-old.stderr sha256=3A96EE21EA58F4597B8193395F91A549F54A947144D028A46E270E42B3AEE9C8
+** S1.3 End-to-end hidden native GUI controls select and recall multiple values in both appearances
+#+NOTE: Six hidden native GTK cases cover update, removal/recall and clear in both themes. Native selected text/index and measured desktop width are verified. Whole-window screenshots and OS clipboard operations remain outside this slice.
+evidence: target/memory-native-positive.log sha256=F38BBB9FCB153168D503AE3DEF4887D894B9EBD3162FFEF8BC68881610C0B71E
+evidence: target/memory-probes/fadb45d12c964f7a85d988e7cbcc51ba/results.jsonl sha256=53FF11BA809DA9796302581306357DC1995AF951E83F8B688F0939723233F74F
+evidence: target/memory-package-acceptance.json sha256=F3C3894CBEC11CA5E65DBAF54FEA681C8A382E318F241108464DE33101B7129E
