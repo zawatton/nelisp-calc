@@ -1,0 +1,14 @@
+#+TITLE: NeLisp Calc application icon
+
+* S1 Windows icon asset and integration
+** S1.1 Persist generated icon artwork and a valid multiresolution Windows ICO with provenance
+evidence: assets/nelisp-calc.ico sha256=520EB8B75C06691DFCD7E808B8A775109C54360D0C41C8701238BAD005AA8607
+evidence: assets/nelisp-calc.png sha256=D7B637F01B999D0AFCAD993B83CCA13D61AE4DE3874E6D94D748B795A0680515
+evidence: assets/icon-prompt.txt sha256=2E9D778104F19033C896BFE6DC7EA985033F5127DC216E2CDF9D25E8ECD8F7BD
+evidence: assets/nelisp-calc-icon-conversion.json sha256=0EC006CC273B27FED2369ACC8E2B8F584CBF9842C46A6AAC79E4EA51D2369F96
+** S1.2 Build embeds real Windows icon resources and hidden native windows receive the application icon without activation
+evidence: target/icon-main-probe.log sha256=B60A527212004035451EA3CF9E17E9A9BAE00DE75BA52ABE5773B4AD63C97456
+** S1.3 End-to-end portable bundle retains icon resources and the existing running calculator receives the selected artwork without restart or foreground activation
+evidence: target/emacs-icon-package-integrity.json sha256=B8D2BE685BDA46622AE08AE5FC0BD58AC7B1CDA4F0952235567B48F57CF6693E
+evidence: target/emacs-icon-portable-acceptance.json sha256=C7D7CCD947D7A3174C789B6848CD35C993A0A3A73FE13A2E4102D3D4BE3B0D5A
+evidence: target/live-icon-verified.json sha256=A91449BC7598522788808565D7088AD281BD7B61AA6DAD8755000AD18AC1B39D

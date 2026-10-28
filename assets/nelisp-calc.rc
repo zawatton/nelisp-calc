@@ -1,0 +1,2 @@
+// Resource 1 is also loaded explicitly for the native GTK window.
+1 ICON "nelisp-calc.ico"

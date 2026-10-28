@@ -76,6 +76,11 @@ try {
     }
     $backend = Start-Process -FilePath $nelispBin -ArgumentList @('--load', ('"' + $server + '"')) -WorkingDirectory $targetRoot -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $targetRoot 'native-backend.stdout.log') -RedirectStandardError (Join-Path $targetRoot 'native-backend.stderr.log')
     $gui = Start-Process -FilePath $guiBin -WorkingDirectory $targetRoot -WindowStyle Hidden -PassThru
+    if ($env:NELISP_CALC_TASK_SESSION) {
+        $sessionTemporary = $env:NELISP_CALC_TASK_SESSION + '.new'
+        @{ guiPid = $gui.Id; session = $targetRoot } | ConvertTo-Json -Compress | Set-Content -LiteralPath $sessionTemporary -Encoding UTF8
+        Move-Item -LiteralPath $sessionTemporary -Destination $env:NELISP_CALC_TASK_SESSION -Force
+    }
     if ($InteractionKeys -or $Commands) {
         if ($TimeoutSeconds -lt 1 -or $TimeoutSeconds -gt 300) { throw 'TimeoutSeconds must be 1..300' }
         if (-not $gui.WaitForExit($TimeoutSeconds * 1000)) { $gui.Kill(); throw 'Native GTK interaction timeout' }
@@ -99,7 +104,7 @@ try {
                     $acknowledgements += [int]$receiptFields[2]
                     continue
                 }
-                if ($command -match '^mode:(.+)$') { $commandMode = $Matches[1] }
+                if ($command -match '^(?:nav:)?mode:(.+)$') { $commandMode = $Matches[1] }
                 if ($command -match '^ui:') { continue }
                 $acknowledgements++
                 # Ordinary typed text sets the input and computes only on Enter.

@@ -1,0 +1,12 @@
+#+TITLE: Restore the calculator from its Emacs command
+
+* S1 Explicit command activation
+** S1.1 Emacs invocations request window restoration without changing the selected mode or creating a duplicate GUI
+evidence: lisp/nelisp-calc.el sha256=F6BDD36AB438B692B36B9E78FF0D90CFBF3BC9D8FC7FD4E46F57E58D53C3FC64
+evidence: tools/emacs-launch.ps1 sha256=E985CCBECB3A063CBD22F85B8577A7BF323BCD854ED2CC062695A55F474B68B4
+evidence: tools/taskbar-launcher.c sha256=48FB4E503B18A7FDD012D62556E517C84A8B6000BFA2E667EC7458D8701B5F8C
+** S1.2 Focused tests cover active launcher processes, legacy reuse and hidden activation suppression while load remains passive
+evidence: target/emacs-restore-ert.log sha256=ADDCA6C9D9A660FA5B09BC1727ED1794C6C93B0E5FEA2699826D98E9AA43C75A
+evidence: target/emacs-restore-probe.log sha256=042627B3049DC03685A8D4FB47BF392F574D512A0829F69580E405B3D816ACF9
+** S1.3 End-to-end live M-x invocation restores the existing minimized native window with the same PID and calculation state
+evidence: target/emacs-restore-live-proof.json sha256=6FB3BDF7B1DCC1CB8CB971B87443992078D90D26F6405D2113A44CF5E7E8775D

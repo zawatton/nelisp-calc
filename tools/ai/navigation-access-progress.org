@@ -1,0 +1,19 @@
+#+TITLE: NeLisp Calc navigation and feature access
+
+* S1 Discoverable native controls
+** S1.1 Record primary-source Windows navigation research and measured startup/graph baseline
+#+NOTE: Research records official Windows sources and measured baseline stages. Fresh parser timing is independent-process evidence with all 101 AST outputs validated; no speedup is claimed by this UI change.
+evidence: docs/windows-navigation-research.org sha256=7F54B392007D9FED1A128921B9442573D85800FA835A6CF9D574358C9797F51B
+evidence: target/access-performance/performance-report.json sha256=721BE1710E120052C65A6365387C09516E5772459F069B428D66DB44CF709177
+evidence: target/access-performance/perf-parser-fresh-2ac4eb4159484bcaaa5330e79705d3b9/parsed-outputs.tsv sha256=1091CACB1433373D0EC363D6047C209F7277199BB0CAFA831B407FED881501F4
+** S1.2 Native mode menu and history, memory and settings/tool buttons expose existing features without unintended calculation or state loss
+#+NOTE: Four hidden native cases verify real labels, ownership, exclusive overlay visibility, focus recovery, no UI-only backend requests, headings and genuine memory/history. Omitting Menu-open fails the native revealed-state contract. Root minimum height remains 727 when panels open.
+evidence: target/access-native-positive.log sha256=C6EDDAE3B1C02E4C0625CE3F0E396EBB73D0C9AAE1EC1BB0A576DB08F4E8B17F
+evidence: target/access-negative-review.json sha256=ACEAD3044060AC363A579D607CCC6F0B873794DEAC21F79C8A5E5F199ABCFDB5
+evidence: target/access-legacy-keyboard.log sha256=16F789B9BA790BCE76892C73297B7210FD540491549F029324F6E2E989EF1576
+evidence: target/access-legacy-mouse.log sha256=91BC5854B2D6F206AC9E961AB028189DA6DE74EA00B934D2C05B623E847445B3
+** S1.3 End-to-end hidden native navigation selects modes and uses real calculations, history and memory in both themes and a portable bundle
+#+NOTE: Parent independently calculates 2.5m to 250cm through the Menu converter route, recalls genuine memory/history and restores full view/focus. Relocated bundle repeats this path with sanitized PATH. Physical input and whole-window visual review remain unverified.
+evidence: target/access-native-positive.log sha256=C6EDDAE3B1C02E4C0625CE3F0E396EBB73D0C9AAE1EC1BB0A576DB08F4E8B17F
+evidence: target/access-independent-review.json sha256=DB0D49966C97493A75AB2F90D6C58310D1E24503B19D2D47EC60F56A88F571B7
+evidence: target/access-package-acceptance.json sha256=A387B457AA609CDAC12F955F46D6D770AB1984995052B3783D0E3997179805FE

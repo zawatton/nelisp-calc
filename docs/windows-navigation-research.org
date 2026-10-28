@@ -1,0 +1,93 @@
+#+TITLE: Windows Calculator navigation and NeLisp Calc access design
+#+DATE: 2026-10-28
+
+* Primary sources
+- [[https://support.microsoft.com/en-us/windows/apps/use-the-calculator-in-windows][Microsoft Support: Use the Calculator in Windows]]
+- [[https://github.com/microsoft/calculator/blob/main/src/Calculator/Views/MainPage.xaml][Microsoft Calculator: MainPage.xaml]]
+- [[https://github.com/microsoft/calculator/blob/main/src/Calculator/Views/Calculator.xaml][Microsoft Calculator: Calculator.xaml]]
+- [[https://github.com/microsoft/calculator/blob/main/docs/ApplicationArchitecture.md][Microsoft Calculator: application architecture]]
+
+* Findings
+Microsoft's support page puts calculator modes and conversion categories in
+the navigation menu. It also identifies history, memory and keep-on-top as
+separate user functions. MainPage.xaml implements a minimal left navigation
+pane, current category heading, a settings entry and a keep-on-top button.
+Calculator.xaml exposes dedicated history and memory entry buttons, with
+flyouts and a docked history/memory area depending on available layout space.
+These are access patterns to adapt, not a requirement to reuse Microsoft's UI
+framework or to claim complete Windows Calculator parity.
+
+The current NeLisp Calc generator creates a horizontal mode row, a persistent
+desktop control grid and a mode-specific side panel. The functions exist,
+but many unrelated controls compete for the same initial screen area. Native
+callbacks and identifiers already provide stable routes for reuse.
+
+The observed running application uses the legacy target/nelisp-calc.exe,
+whereas current builds are selected by target/current-gui.txt. A running old
+binary does not acquire later features when source or build pointers change.
+No running user application is replaced or brought forward by this work.
+
+* Proposed interaction
+- Keep an always-reachable header with a menu button and current mode name.
+- Put mode choices in a collapsible native menu; selection closes the menu
+  and keeps the mode heading, calculation and keyboard state consistent.
+- Give history and stored memory clear entry buttons and dedicated panels.
+- Put appearance and secondary window/tools actions behind a separate entry.
+- Preserve existing calculation, selection, history, memory and theme callbacks.
+- Keep compact/full recovery reachable, avoid overlapping panels and provide
+  keyboard/focus access and descriptive labels or tooltips.
+
+* Performance investigation
+Measure native startup and real backend readiness separately, then measure
+one genuine graph calculation in the same persistent backend. Preserve the
+101-sample production default and record exact inputs, output checks and
+timing artifacts. Avoid concurrent runtime-heavy probes during measurement.
+Do not label a layout change as a performance improvement without evidence.
+
+Baseline measurements on the pre-navigation build (one validated persistent
+backend; production 101-sample square graph):
+
+| Stage | Measured milliseconds |
+|-------+-----------------------|
+| Genuine Calc backend readiness | 9770.50 |
+| Arithmetic request | 274 |
+| First square graph | 13713.97 |
+| Identical graph in the same backend | 13619.69 |
+| Native GTK theme-ready marker with a synthetic backend response | 1936.11 |
+| Parser-only 101 inputs in an independent process | 13258.63 |
+
+The GTK marker is not a real backend startup measurement. The fresh parser
+run excludes initialization and input construction; all 101 ASTs were retained
+and their normalized/formatted values checked. Earlier sequential phase timings
+also suggested parser cost, but arena/GC state prevents treating their ratio
+as an attributed CPU fraction or an expected speedup. These are single-run
+diagnostics, not a statistical benchmark.
+
+The first optimization candidate is parsing one genuine Calc expression
+template and substituting each sample value through Calc, with differential
+checks for precision, angles, errors and discontinuities. No alternative math
+evaluator is appropriate. A bounded identical-input graph cache could help
+repeats, but semantic invalidation and nondeterministic expressions need a
+separate design. Neither optimization is claimed implemented by this UI change.
+
+Detailed measured evidence is retained in target/access-performance/.
+
+* Implemented access layout
+The persistent header contains Menu, the current mode heading, History,
+Memory and More / Settings. Menu reveals the seven existing modes on the left;
+the other panels open on the right. Native GtkOverlay panels do not participate
+in parent measurement, so opening them does not push the calculator offscreen.
+Panels are mutually exclusive; Close panel restores the opener's focus, and
+mode selection closes the drawer and updates the heading, including Alt mode
+shortcuts. Quick memory controls and Compact / Full remain reachable.
+
+History and memory retain their existing genuine backend data and selectors.
+More / Settings provides appearance, Copy/Paste and window tools. Tests do not
+invoke the clipboard or present/pin a window. The native Menu label is
+descriptive text rather than a reproduction of Microsoft's icon font.
+
+* Verification limits
+Use hidden GTK controls and genuine standalone Calc. Do not present windows,
+operate the user's clipboard or terminate the existing application. Signal
+and native layout checks can verify routing and visibility, but physical
+input recognition and whole-window visual review remain separate checks.

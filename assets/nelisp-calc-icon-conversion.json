@@ -1,0 +1,47 @@
+{
+  "source": "nelisp-calc.png",
+  "source_sha256": "d7b637f01b999d0afcad993b83cca13d61ae4de3874e6d94d748b795a0680515",
+  "output": "nelisp-calc.ico",
+  "output_sha256": "520eb8b75c06691dfcd7e808b8a775109c54360d0c41c8701238bad005aa8607",
+  "conversion": "python tools/convert-icon.py; Pillow RGBA DIB ICO export only",
+  "pillow_version": "12.2.0",
+  "sizes": [
+    16,
+    24,
+    32,
+    48,
+    64,
+    128,
+    256
+  ],
+  "alpha_ranges": {
+    "16": [
+      0,
+      255
+    ],
+    "24": [
+      0,
+      255
+    ],
+    "32": [
+      0,
+      255
+    ],
+    "48": [
+      0,
+      255
+    ],
+    "64": [
+      0,
+      255
+    ],
+    "128": [
+      0,
+      255
+    ],
+    "256": [
+      0,
+      255
+    ]
+  }
+}

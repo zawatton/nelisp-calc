@@ -1,0 +1,32 @@
+#+TITLE: Mode-aware windows and taskbar tasks
+
+* S1 Mode-aware native layout
+** S1.1 Standard starts compact and each mode selects a usable size
+evidence: build.el sha256=07E20056D0E1757A23F0BCB1A03CB47877382037B8E7B64734D138E59DFF5A79
+evidence: navigation.el sha256=CF9BBDC8A605EC6E3796A806C982C663555F8475FEDBCBF8214597A3ADE2BA86
+evidence: src/nelisp-calc-gui.el sha256=8ADB09A1954ABFE4F321F7E129ACDA00E44DAC54F8CBCF847D315FB719072B1A
+evidence: target/mode-window-control-proof.json sha256=43EE6DEF3D26E3D80C39710883DCBA7FBFBEA37E86E7DF1831E457640A31CE6E
+** S1.2 Hidden native transitions and controls preserve calculations and focus without stale minimum sizes
+evidence: target/mode-taskbar-navigation.log sha256=DC5409CBC4B9B7A85A670D466904B900B3FA79E43AFD3F60B9E68F9FDAB2A529
+evidence: target/mode-taskbar-graph-gestures.log sha256=3CC49CFD95085D6CA26DF2A0175C4BFE9F6E86970AA6097A32829629D7216B88
+** S1.3 End-to-end native mode switching calculates correctly while resizing in both themes
+evidence: target/mode-window-main-positive.log sha256=11A14FF0A267D00C1B3FA87B8835D22EC92F53D733AA413BFFBFF71694CF8522
+
+* S2 Taskbar mode launch
+** S2.1 A stable Windows application identity and launcher expose seven mode tasks with the custom icon
+evidence: taskbar.el sha256=95C41EE976014B8E0FEF92BAC3DF01151C4EE93AFBC18B815617B1649D4B19B5
+evidence: tools/taskbar-launcher.c sha256=48FB4E503B18A7FDD012D62556E517C84A8B6000BFA2E667EC7458D8701B5F8C
+evidence: target/mode-taskbar-live-proof.json sha256=BD3D07B2A9787B6587CAA51729FF59C0940C39C566F95B5EE1BDB0FA052D2E0C
+** S2.2 Launch arguments route requested modes safely to new or existing native sessions
+evidence: tools/emacs-launch.ps1 sha256=E985CCBECB3A063CBD22F85B8577A7BF323BCD854ED2CC062695A55F474B68B4
+evidence: target/mode-taskbar-integrated-proof.json sha256=FBFBD4B4F6CBC94593B0AFF206FB8C038E7E16B56848143D131F0A8DC9199AD9
+evidence: target/mode-taskbar-emacs-probe.log sha256=35B23D8322C0356CB482B5307433194B4819309D2E8C069121C0138626E66FA5
+evidence: target/mode-taskbar-emacs-ert.log sha256=88E31E8C1D5A3927175EDEA9FF06A0AD18E0BFBBED96EF25EDCBA14B058098DC
+evidence: target/mode-taskbar-legacy-reuse.json sha256=BAE763F824F0CE7EDA4B11A2E811AAAD0EE5151D4809653373B78BB34B8642C6
+evidence: target/mode-taskbar-live-reuse.json sha256=316545CFE8E73747934C0D70033249D86439203C238970BCE54588D04EE3F06A
+** S2.3 End-to-end invocation of the shell links registered as taskbar tasks selects the requested native mode and layout without a second calculator
+#+NOTE: This criterion covers real shell-link invocation and native state. It does not claim a physical right-click review of the Windows taskbar popup.
+evidence: target/mode-taskbar-integration-review.json sha256=37AE1170A1E5887A5B81254F68F419E4C34C34C6D0C1C47D864A32E627C7B30C
+evidence: target/mode-taskbar-package-integrity.json sha256=68EFB14FB9F1BE2D3BD4B2908541C3CBC3FD4177344B8BD164C5416F7B738CAA
+evidence: target/mode-taskbar-portable-proof.json sha256=FB314F3ACC95729DBA4A7B7D0308B47D6BB385FB713CD03626EAF7697B769997
+evidence: target/mode-taskbar-background-proof.json sha256=74B5B3BA6839590DE77590DC66D66A555F245C8053EA4EF897A369B9CBA62398

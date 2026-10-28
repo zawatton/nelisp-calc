@@ -1,0 +1,13 @@
+#+TITLE: Enter submits calculation without activating navigation
+
+* S1 Calculation keyboard focus
+** S1.1 Starting a calculation by mouse or ordinary keys focuses the calculation area without taking focus from editable fields or open navigation panels
+evidence: keyboard.el sha256=3C48EC2F8EEA1036734A8AF919DAEA1948439C5B3E842A81F1F22AAA4755B83E
+evidence: build.el sha256=07E20056D0E1757A23F0BCB1A03CB47877382037B8E7B64734D138E59DFF5A79
+evidence: navigation.el sha256=CF9BBDC8A605EC6E3796A806C982C663555F8475FEDBCBF8214597A3ADE2BA86
+** S1.2 Native regression checks reject the previous Menu-focused behavior and preserve entry and navigation keyboard behavior
+evidence: target/calculation-enter-negative-proof.json sha256=1B682FACD993DB2829C3E3A4863F247138EFEE0D3E258581C1417992689A4DC3
+evidence: target/calculation-enter-shortcuts.log sha256=16D91E5042CC893E7092E1FE50BB5A6EC35BA8C3EDCA14FFEA5E5EC5CE72E494
+** S1.3 End-to-end native mouse and keyboard arithmetic followed by Return and keypad Enter calculates once and leaves the menu closed
+evidence: target/calculation-enter-main.log sha256=F72E97196767A8F2771E45CA9A2141B24A8B5B4C69442FBA5600AD8C2AA93F29
+evidence: target/enter-migration-live-proof.json sha256=29DE2690BAC2C1EBB3F64E78129B01072776096D230966011BFE6B62BE3C61E0

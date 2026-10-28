@@ -29,11 +29,15 @@ $pointer = [IO.File]::ReadAllText((Join-Path $source 'target/current-gui.txt')).
 if ([IO.Path]::IsPathRooted($pointer) -or $pointer -match '(^|[\\/])\.\.([\\/]|$)' -or -not $pointer) { throw 'Invalid source GUI pointer' }
 $guiSource = Join-Path $source ('target/' + $pointer)
 Copy-BundleFile $guiSource 'app/target/nelisp-calc.exe' ('app/target/' + $pointer)
+& (Join-Path $source 'tools/build-taskbar.ps1') | Out-Null
+Copy-BundleFile (Join-Path $source 'target/NeLispCalc.exe') 'NeLispCalc.exe' 'generated: tools/taskbar-launcher.c + assets/nelisp-calc.rc'
 Copy-BundleFile (Join-Path $dev 'nelisp/target/nelisp.exe') 'nelisp/target/nelisp.exe' 'nelisp/target/nelisp.exe'
 Copy-BundleTree (Join-Path $source 'lisp') 'app/lisp' 'app/lisp'
+Copy-BundleTree (Join-Path $source 'assets') 'app/assets' 'app/assets'
+Copy-BundleFile (Join-Path $source 'tools/emacs-launch.ps1') 'app/tools/emacs-launch.ps1' 'app/tools/emacs-launch.ps1'
 Copy-BundleTree (Join-Path $source 'src') 'app/src' 'app/src'
-foreach ($file in @('build.el', 'keyboard.el', 'gestures.el', 'README.org')) { Copy-BundleFile (Join-Path $source $file) ('app/' + $file) ('app/' + $file) }
-foreach ($file in @('launch.ps1', 'update-rates.ps1')) {
+foreach ($file in @('build.el', 'keyboard.el', 'gestures.el', 'navigation.el', 'taskbar.el', 'README.org')) { Copy-BundleFile (Join-Path $source $file) ('app/' + $file) ('app/' + $file) }
+foreach ($file in @('launch.ps1', 'update-rates.ps1', 'taskbar-launcher.c', 'build-taskbar.ps1')) {
     $scriptSource = if ($file -eq 'launch.ps1' -and $LauncherSnapshot) { $LauncherSnapshot } else { Join-Path $source ('tools/' + $file) }
     Copy-BundleFile $scriptSource ('app/tools/' + $file) ('app/tools/' + $file)
 }

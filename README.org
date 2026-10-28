@@ -21,6 +21,22 @@ evidence in that directory; those evidence files are not shipped in a clone.
 
 * Run and build
 
+From host GNU Emacs on Windows, add this repository's =lisp/= directory
+(or the portable bundle's =app/lisp/=) to =load-path= and register:
+
+#+begin_src emacs-lisp
+(autoload 'nelisp-calc "nelisp-calc" nil t)
+#+end_src
+
+Run =M-x nelisp-calc=. Loading this module does not start the application
+or load the calculation engine. The command launches asynchronously with
+no console window or Emacs buffer activation. An existing executable
+under this application's =target/= directory is reused, restoring its
+window while preserving the selected mode and calculation. Launch errors
+appear in = *NeLisp Calc launcher*= or = *NeLisp Calc activation*= and a message.
+Set =nelisp-calc-project-root= to override the inferred repository or
+portable =app/= directory. No global keys or built-in Calc commands change.
+
 Run explicitly from this directory in PowerShell 7:
 
 #+begin_src powershell
@@ -38,9 +54,46 @@ Successful builds are saved under =target/builds/=, then selected through
 Each application instance owns a private mailbox and backend under
 =target/sessions/=. Closing a window stops only its own backend.
 
+The persistent header provides =Menu=, the current mode, =History=,
+=Memory= and =Settings=. Menu opens a left drawer with the seven
+existing modes. History and Memory expose the actual stored entries;
+Settings contains Appearance, Copy, Paste and Always on top.
+The panels are exclusive overlays and do not increase the main layout's
+height. =Close panel= returns keyboard focus to its header button.
+Mode selection closes the drawer; Alt+1 through Alt+5 also update the heading.
+MS/MR/MC/M+/M- are in Memory; =Compact / Full= is in Settings.
+The native access regression probe is =tools/navigation-access-native-probe.ps1=.
+Its =-KeepDrawerClosedForControl= negative control must fail the actual
+drawer visibility contract. Automated checks use hidden GTK widgets and
+do not present windows or operate the clipboard.
+
 All automated interaction checks suppress =gtk_window_present= and focus
 requests. They exercise actual native GTK controls without showing a window.
 No update is automatically opened after a build.
+
+Standard starts compact (381 by 584 logical pixels in the verified GTK
+environment). Scientific, Programmer, Graph, Date, Converter and Currency
+select their own layouts; returning to Standard restores its compact size.
+Window decorations, font settings and display scaling can change the physical
+pixel dimensions. Drawing and pointer coordinates share the same scaling.
+
+Build the Windows desktop entry point with =./tools/build-taskbar.ps1=.
+It creates =target/NeLispCalc.exe=, a console-free launcher with the application
+icon. Run it to start or reuse the calculator. =--mode scientific= and the
+other mode names select a mode in the same application. An older running
+version must be closed once before it can receive these mode requests.
+
+The launcher registers seven Japanese mode tasks in the Windows taskbar
+Jump List. Right-click the application's taskbar icon to select one.
+The launcher, native window and generated shortcuts share AppUserModelID
+=Fujisawa.NeLispCalc=. Create a shortcut with
+=target/NeLispCalc.exe --shortcut "PATH/NeLisp Calc.lnk"=; use that shortcut
+when pinning the application. Pinning remains a Windows user action.
+Plain =M-x nelisp-calc= preserves an existing mode and restores the window.
+Repeated commands also work while the original launcher owns its backend.
+Loading the Elisp module remains passive; hidden checks suppress activation.
+The focused probes are =tools/mode-window-probe.ps1= and
+=tools/taskbar-probe.ps1=; the latter requires an isolated checkout.
 
 A Windows folder/ZIP bundle is generated with =./tools/package.ps1=.
 Extract the ZIP and double-click its =Launch.cmd=. The bundle includes the
@@ -115,6 +168,18 @@ The appearance probe uses isolated files under =target/= and never presents
 or focuses its native windows. It verifies actual GTK computed colors and
 provider scheme, Cairo pixel colors, restart persistence, arithmetic during
 switching, graph colors, invalid preferences and write-failure feedback.
+
+* Application icon
+
+The original transparent artwork is =assets/nelisp-calc.png=. Its prompt and
+conversion provenance are retained in =assets/=. The Windows ICO contains
+16, 24, 32, 48, 64, 128 and 256 pixel frames and is embedded by MinGW
+=windres= during the normal build. Native startup assigns the small and large
+window icons without changing the application's presentation policy.
+
+=python tools/convert-icon.py= regenerates the ICO with Pillow; Pillow is not
+needed to run the shipped application. =tools/icon-probe.ps1= verifies the PE
+resources, shell extraction and hidden native window icon handles.
 
 * Architecture and compatibility
 
@@ -247,6 +312,13 @@ modifier combinations to prevent duplicate actions.
 Editable focus keeps typing, selection, Delete, Backspace, Return and Ctrl+C/V
 with the native entry; global mode/memory shortcuts remain available.
 Clipboard callbacks are never invoked by the shortcut probes.
+
+Selecting a mode, clicking the calculator keypad, or typing calculator keys
+returns focus to the calculation area. Return and keypad Enter submit one
+equals action there. Editable fields retain their own Return behavior, and
+intentionally focused navigation buttons retain native GTK activation.
+=tools/calculation-enter-probe.ps1= checks the actual GTK focus and closed
+menu state alongside the exact backend request stream.
 
 =tools/shortcut-probe.ps1= drives genuine GTK =key-pressed= signals in windows
 that are never presented. Each receipt records the signal return, entry text

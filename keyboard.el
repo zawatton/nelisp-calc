@@ -9,7 +9,7 @@
                (let ((id (intern (format "shortcut_%d" (cl-incf index)))))
                  (let ((mode (string-prefix-p "mode:" (cadr row))))
                    (push `(data-blob ,id ,(concat (cadr row) (if mode "\0" "\n\0")) rodata) forms)
-                   (setq tail `(if ,(car row) (seq (,(if mode 'emit_command 'send_command) ctx (data-addr ,id)) 1) ,tail)))))
+                   (setq tail `(if ,(car row) (seq ,@(unless mode '((if (= (shortcut_editable_focus ctx) 1) 0 (extern-call gtk_widget_grab_focus (ptr-read-u64 ctx 8))))) (,(if mode 'emit_command 'send_command) ctx (data-addr ,id)) 1) ,tail)))))
              tail))
          (key (value) `(= keyval ,value))
          (letter (value) `(and (= (logand state 1) 0) (or (= keyval ,value) (= keyval ,(- value 32))))))
@@ -37,10 +37,19 @@
         (push `(defun on_key (controller keyval keycode state ctx)
                        (if (/= (logand state 469762060) 0) 0
                          (if (= (shortcut_editable_focus ctx) 1) 0
+                          (if (and (or (= keyval 65293) (= keyval 65421)) (= (shortcut_area_focus ctx) 0)) 0
                           (if (and (> (ptr-read-u64 ctx 3120) 1) (or ,(letter 114) (= keyval 64) (= keyval 37))) 0
                            (let ((special (if (= (ptr-read-u64 ctx 3120) 1) ,scientific
                                             (if (= (ptr-read-u64 ctx 3120) 2) ,programmer 0))))
-                             (if (= special 1) 1 ,ordinary)))))) forms)
+                             (if (= special 1) 1 ,ordinary))))))) forms)
+        (push '(defun shortcut_area_focus (ctx)
+                 (let ((focus (extern-call gtk_window_get_focus (ptr-read-u64 ctx 3288))))
+                   (if (= focus 0) 0
+                     (if (= focus (ptr-read-u64 ctx 8)) 1
+                       (extern-call gtk_widget_is_ancestor focus (ptr-read-u64 ctx 8)))))) forms)
+        (push '(data-blob calculation_focus_command "ui:calc-focus\0" rodata) forms)
+        (push '(data-blob calculation_focus_file "calculation-focus.tsv\0" rodata) forms)
+        (push '(data-blob calculation_focus_format "%ld\t%ld\t%ld\n\0" rodata) forms)
         (push '(defun shortcut_editable_focus (ctx)
                  (let ((focus (extern-call gtk_window_get_focus (ptr-read-u64 ctx 3288))))
                    (if (= focus 0) 0
@@ -54,6 +63,12 @@
         (push '(data-blob shortcut_receipts "key-receipts.txt\0" rodata) forms)
         (push '(data-blob shortcut_format "%ld\t%ld\t%ld\t%s\t%ld\t%ld\t%ld\t%ld\t%ld\t%ld\t%ld\t%ld\t%ld\n\0" rodata) forms)
         (push '(defun emit_shortcut_command (ctx command)
+                 (if (= (extern-call strcmp command (data-addr calculation_focus_command)) 0)
+                   (let ((fp (extern-call fopen (data-addr calculation_focus_file) (data-addr append_mode))))
+                     (seq (if (= fp 0) 0 (seq
+                       (extern-call fprintf fp (data-addr calculation_focus_format) (shortcut_area_focus ctx)
+                         (= (extern-call gtk_window_get_focus (ptr-read-u64 ctx 3288)) (ptr-read-u64 ctx 6544))
+                         (ptr-read-u64 ctx 6584)) (extern-call fclose fp))) 1))
                  (if (= (extern-call strncmp command (data-addr shortcut_entry_prefix) 9) 0)
                    (seq (extern-call gtk_editable_set_text (ptr-read-u64 ctx 184) (+ command 9)) 1)
                  (if (= (extern-call strcmp command (data-addr shortcut_selection)) 0)
@@ -84,5 +99,5 @@
                                    (ptr-read-u64 ctx 3120) (ptr-read-u64 ctx 3824) (ptr-read-u64 ctx 3832)
                                    (if (= (ptr-read-u64 ctx 3816) 0) 0 (extern-call gtk_event_controller_get_propagation_phase (ptr-read-u64 ctx 3816)))
                                    (if (= (ptr-read-u64 ctx 3816) 0) 0 (= (extern-call gtk_event_controller_get_widget (ptr-read-u64 ctx 3816)) (ptr-read-u64 ctx 3288))))
-                                 (extern-call fclose fp)))) 1))) 0)))))) forms)
+                                 (extern-call fclose fp)))) 1))) 0))))))) forms)
         (append program (nreverse forms))))))

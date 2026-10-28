@@ -1,0 +1,53 @@
+#+TITLE: Mode-aware windows and taskbar mode tasks
+
+* Behavior
+
+Standard opens with a compact calculator layout. Other modes select a size
+suited to their controls. Returning to Standard restores its compact size;
+GTK child minimum sizes must not retain the previous mode's footprint.
+History, memory and settings remain available through the navigation header.
+Drawing and pointer coordinates must use the same scale at every size.
+
+The Windows taskbar Jump List provides one task for each supported mode:
+Standard, Scientific, Programmer, Graph, Date, Converter and Currency.
+Tasks use the same stable application identity as the shortcut and native
+window. A mode request reuses the existing application or starts a new
+backend and GUI. Task activation may restore that application's window;
+automated checks suppress all presentation and focus changes.
+
+* Windows integration references
+
+- [[https://learn.microsoft.com/en-us/windows/win32/api/shobjidl_core/nn-shobjidl_core-icustomdestinationlist][ICustomDestinationList]] defines user tasks and their application identity.
+- [[https://learn.microsoft.com/en-us/windows/win32/shell/appids][Application User Model IDs]] describes shared identities for windows and shortcuts.
+- [[https://learn.microsoft.com/en-us/windows/win32/shell/taskbar-extensions][Taskbar extensions]] describes argument-bearing shell links as application tasks.
+- [[https://github.com/microsoft/calculator/blob/main/src/Calculator/Views/Calculator.xaml][Windows Calculator layout]] uses distinct mode and compact-layout states.
+
+* Validation boundary
+
+The objective ledger is =tools/ai/mode-window-taskbar-progress.org=.
+Native hidden windows and real shell tasks are tested without operating the
+clipboard or bringing the user's calculator to the foreground. A passing
+hidden test does not establish a visual review of the taskbar popup itself.
+Existing application-wide parity criteria remain separate.
+
+* Verified results
+
+The integrated hidden GTK tree measures Standard at 381 by 584 logical pixels,
+Scientific at 440 by 740, Programmer at 605 by 740, Graph at 933 by 650,
+Date at 440 by 560, and Converter/Currency at 440 by 740. The same compact
+predicate rejects the previous binary at 516 by 685. Both themes preserve
+native mouse arithmetic, mode shortcuts, memory, history and panel focus.
+
+All seven persisted shell links select their requested modes in one native
+process. Three concurrent requests are preserved. The GUI reads back the
+same AppUserModelID as its links; malformed arguments are rejected. The
+relocated bundle repeats these checks with a sanitized PATH. These results
+cover native mode/layout receipts and successful COM Jump List registration;
+the physical taskbar popup has not been visually reviewed.
+
+The per-user Start shortcut now targets the stable native launcher. The
+previous idle calculator session and shortcut were backed up outside the
+repository before replacing that window with the updated application. An
+ignored operational build changes only the initial presentation to minimized
+without activation; subsequent task selections retain normal presentation.
+The normal build pointer and distributed binary retain normal startup.
