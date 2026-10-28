@@ -1,0 +1,21 @@
+;;; compat-isqrt-provider.el --- Genuine definition provenance contract -*- lexical-binding: t; -*-
+(let* ((root (expand-file-name ".." (file-name-directory (replace-regexp-in-string "\\\\" "/" load-file-name t t))))
+       (source (expand-file-name "../nelisp-emacs/vendor/emacs-lisp/emacs-lisp/cl-extra.el" root))
+       (provided-before (featurep 'cl-extra)))
+  (load (expand-file-name "lisp/nelisp-calc-compat.el" root) nil t)
+  (nelisp-calc-compat-install root)
+  (nelisp-calc-compat-load-isqrt source)
+  (unless (eq provided-before (featurep 'cl-extra))
+    (error "Definition-only provider changed cl-extra feature state"))
+  (unless (equal (plist-get nelisp-calc-compat-isqrt-origin :definition-sha256)
+                 "93ad2a636c7d4b5830f1d2de52235843e708f44b820f98985abd3b7a4a9338fd")
+    (error "GNU cl-isqrt source form changed"))
+  (dolist (item '((0 0) (1 1) (2 1) (99 9) (100 10)
+                  (2000000000000000000000000000000000000000000000000000000000000
+                   1414213562373095048801688724209)))
+    (unless (= (cl-isqrt (car item)) (cadr item)) (error "Genuine cl-isqrt mismatch %S" item)))
+  (condition-case nil
+      (progn (cl-isqrt -1) (error "Negative square root accepted"))
+    (arith-error nil))
+  (princ (format "ISQRT-SOURCE=%S\n" nelisp-calc-compat-isqrt-origin)))
+(princ "COMPAT-ISQRT-PROVIDER-PASS\n")

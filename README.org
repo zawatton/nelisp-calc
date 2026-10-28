@@ -1,0 +1,192 @@
+#+TITLE: NeLisp Calc
+
+A native Sumi calculator using genuine GNU Emacs Calc inside standalone
+NeLisp. Host GNU Emacs is a build/reference tool, not the application's
+calculation backend.
+
+Repository: [[https://github.com/zawatton/nelisp-calc][zawatton/nelisp-calc]].
+
+* Source checkout prerequisites
+
+Keep these sibling checkouts alongside this repository:
+
+- [[https://github.com/zawatton/nelisp][zawatton/nelisp]] as =../nelisp/=, including a matching standalone runtime.
+- [[https://github.com/zawatton/nelisp-emacs-lib][zawatton/nelisp-emacs-lib]] as =../nelisp-emacs/=, providing the genuine GNU Calc sources.
+
+Building requires host GNU Emacs, MinGW GCC/pkg-config and GTK4 development
+libraries. Running the packaged application does not require those build tools.
+Generated binaries, ZIP packages, logs and per-instance data under =target/=
+are excluded from Git. The progress ledger references local verification
+evidence in that directory; those evidence files are not shipped in a clone.
+
+* Run and build
+
+Run explicitly from this directory in PowerShell 7:
+
+#+begin_src powershell
+./tools/launch.ps1
+#+end_src
+
+To rebuild:
+
+#+begin_src powershell
+./tools/build.ps1
+#+end_src
+
+Successful builds are saved under =target/builds/=, then selected through
+=target/current-gui.txt=. An already running executable is not overwritten.
+Each application instance owns a private mailbox and backend under
+=target/sessions/=. Closing a window stops only its own backend.
+
+All automated interaction checks suppress =gtk_window_present= and focus
+requests. They exercise actual native GTK controls without showing a window.
+No update is automatically opened after a build.
+
+A Windows folder/ZIP bundle is generated with =./tools/package.ps1=.
+Extract the ZIP and double-click its =Launch.cmd=. The bundle includes the
+NeLisp runtime, genuine GNU providers, 59 non-system native DLLs, source and
+license notices, and a SHA256 manifest. PowerShell 7 or the Windows-provided
+PowerShell host is used; host GNU Emacs and MSYS2 are not needed to run it.
+=Launch.cmd= and =portable-launch.ps1= in this source directory are packaging
+templates; use =tools/launch.ps1= for the development checkout.
+
+* Modes
+
+- Standard: sequential arithmetic, decimals, sign, percent, backspace, clear
+  and repeated equals. =2+3*4= produces =20=. MS/MR/MC/M+/M- and a 100-entry
+  history with native selection/recall are available per application instance.
+- Scientific: expression precedence, parentheses, powers, roots, trigonometry,
+  logarithms, exponentials and factorials, with DEG/RAD state. Standalone
+  checks cover 30-digit roots, logs, exponentials and trigonometry.
+- Programmer: exact signed/unsigned 8/16/32/64-bit words, HEX/DEC/OCT/BIN,
+  fixed-width arithmetic, logical operations and logical/arithmetic shifts.
+- Convert: native category/from/to selectors for length, volume, area, mass,
+  temperature, energy, speed, time, power, data, pressure and angle.
+- Date: dedicated ISO start/end dates and a day offset, with difference and
+  day-addition buttons. Gregorian leap years and the range 0001..9999 are checked.
+- Graph: a real Calc expression such as =x^2=, sampled at 101 points, with
+  editable range fields, clipping and discontinuity breaks. Undefined samples
+  are not joined.
+- Currency: native currency selectors using a validated ECB reference-rate
+  cache. The rate date and stale-cache state remain visible.
+
+Enter ordinary expressions in the expression field. Conversion and date
+operations have their own controls; backend command syntax is not required
+for those product flows.
+
+Copy/Paste, compact/full and always-on-top controls are implemented. Paste
+only fills the entry field; calculation starts when the user presses Enter.
+Automated checks do not read or change the system clipboard. Clipboard OS
+interoperability and independent topmost-style-bit verification remain unrun.
+
+The currency cache can also be updated explicitly:
+
+#+begin_src powershell
+./tools/update-rates.ps1
+#+end_src
+
+The native Update ECB rates button starts this bounded helper asynchronously.
+The helper has been tested against the real feed; the native refresh-button
+action itself has not been exercised. Missing, future, invalid and stale
+cache cases are checked. The source is the
+[[https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html][ECB reference-rate publication]]
+and its official daily XML feed.
+
+* Architecture and compatibility
+
+#+begin_example
+Sumi native GUI (NeLisp AOT / GTK4 / Cairo)
+  -> ordered calculator actions through a bounded FIFO
+  -> persistent standalone NeLisp backend
+  -> genuine GNU Calc parser, normalization and numeric formatting
+#+end_example
+
+The adapter loads genuine Calc mathematics without its Emacs buffer/window
+interface. GNU sources remain unchanged. A process-local compatibility layer
+repairs exact integer exponentiation, wide integer division and full-keymap
+layout. It loads the genuine =cl-isqrt= definition from unmodified =cl-extra.el=
+and records source/definition SHA256 values, without claiming that the entire
+=cl-extra= feature was initialized.
+
+The current runtime reports an epoch-zero clock. The launcher supplies the
+actual Windows UTC date through =NELISP_CALC_TODAY= for currency freshness
+validation. The backend validates this explicit clock input.
+
+Memory and history snapshots stay inside the owning instance's session
+directory. Internal graph samples and memory arithmetic do not fill history.
+Initial startup and long computations show explicit busy state, with a
+90-second response deadline; genuine backend errors still display immediately.
+
+Programmer words use explicit fixed-width bit strings so 64-bit wrap and
+unsigned conversion do not depend on the runtime's tagged fixnum width.
+Plot expressions always use Calc; native floating-point operations are used
+only for viewport geometry. Negative coordinate serialization accounts for
+the runtime's negative =%g= formatting defect.
+
+* Verification
+
+#+begin_src powershell
+./tools/engine-probe.ps1 -Mode Standalone
+./tools/engine-probe.ps1 -Mode ScientificPrecision
+./tools/engine-probe.ps1 -Mode ScientificTokens
+./tools/modes-probe.ps1 -Mode Standalone
+./tools/session-probe.ps1 -Mode Standalone
+./tools/graph-probe.ps1 -Mode Standalone
+./tools/gui-acceptance.ps1
+./tools/advanced-gui-acceptance.ps1 -Group All
+./tools/advanced-gui-acceptance.ps1 -SelfTest
+./tools/desktop-gui-acceptance.ps1
+./tools/desktop-gui-acceptance.ps1 -SelfTest
+./test/mailbox-snapshot.ps1
+#+end_src
+
+Host reference checks are separate from standalone checks. Native checks
+save per-mode images and response receipts under =target/= and require the
+actual display, status and acknowledged command count. The response verifier
+also rejects wrong answers, engine errors, missing commands and incomplete
+responses. Graph tests include negative-x pixel goldens and an undefined
+point at zero for =1/x=.
+
+The mailbox probe retries transient locked/missing response snapshots and
+retries request writes only while opening a handle, before any write occurs.
+Its control reproduces a sharing-violation failure with the old reader,
+then verifies lock recovery, missing-file recovery and empty-response rejection.
+The application's backend polling behavior was not changed for this probe fix.
+
+The package probe validates every bundled manifest hash, relocates to a path
+containing spaces, restricts PATH, and verifies actual bundled GUI/runtime
+processes and loaded module locations while calculating. It suppresses all
+presentation/focus and never sends clipboard actions.
+
+Only the Cairo canvas images have been visually reviewed. Whole-window GTK
+layout review remains pending because foreground windows were disallowed.
+
+Run the full objective's meter from an MSYS2/Git Bash environment:
+
+#+begin_src sh
+PATH="/usr/bin:$PATH" bash ../../bin/progress-meter.sh --ledger tools/ai/calculator-progress.org --root . --json
+#+end_src
+
+The ledger retains 12 criteria. Recorded evidence hashes avoid repeating
+passing expensive checks merely to redisplay the meter.
+
+* Costs and remaining scope
+
+The graph kernel was reduced from 303 Calc evaluations per plot to 101.
+The integrated standalone suite covering two plots and currency cases took
+49.429 seconds on this machine. Plotting can take several seconds.
+
+An isolated exact-exponentiation comparison measured 1.0472 seconds for the
+old loop and 0.08156 seconds for squaring, using fresh standalone processes.
+
+Windows Calculator parity is not complete. Full Windows shortcut/unit-catalog
+equivalence, interactive graph pan/zoom and implicit-equation plotting remain
+outside this version. Memory currently has one slot. Whole-window visual
+review and actual system clipboard verification are deferred while the user
+is working; these are not reported as passing checks.
+
+Dependencies resolve relative to the checkout or explicit environment
+overrides: =../nelisp/=, =../nelisp-emacs/vendor/emacs-lisp/= and the installed
+MinGW GTK4 libraries. Existing GNU copyright/license notices apply. The
+source checkout is a development tree; its generated bundle was also tested
+without the original source trees or toolchain directories on the lookup paths.

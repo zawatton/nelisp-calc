@@ -1,0 +1,21 @@
+;;; engine-scientific.el --- Genuine scientific acceptance -*- lexical-binding: t; -*-
+(load (expand-file-name "../lisp/nelisp-calc-engine.el"
+                        (file-name-directory
+                         (replace-regexp-in-string "\\\\" "/" load-file-name t t))) nil t)
+(nelisp-calc-initialize)
+(when nelisp-calc-engine-error (error "ENGINE-UNAVAILABLE: %s" nelisp-calc-engine-error))
+(dolist (case '(("sqrt(2)" "1.41421356237")
+                ("sin(30)" "0.5") ("cos(60)" "0.5") ("tan(45)" "1")
+                ("ln(1)" "0") ("exp(0)" "1") ("log10(100)" "2")
+                ("2^10" "1024") ("5!" "120")))
+  (let ((result (nelisp-calc-evaluate (car case))))
+    (unless (and (plist-get result :ok)
+                 (equal (plist-get result :value) (cadr case)))
+      (error "Scientific failed %S: %S" case result))))
+(unless (equal (plist-get (nelisp-calc-evaluate "sqrt(2)" 30) :value)
+               "1.41421356237309504880168872421")
+  (error "Scientific 30-digit precision failed"))
+(dolist (expression '("2+(" "unknown(2)" "1/0" "ln(0)"))
+  (when (plist-get (nelisp-calc-evaluate expression) :ok)
+    (error "Nonnumeric or invalid expression accepted: %s" expression)))
+(princ "ENGINE-SCIENTIFIC-PASS\n")

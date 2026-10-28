@@ -1,0 +1,21 @@
+;;; scientific-tokens.el --- Scientific interaction contracts -*- lexical-binding: t; -*-
+(load (expand-file-name "../lisp/nelisp-calc-engine.el"
+                        (file-name-directory
+                         (replace-regexp-in-string "\\\\" "/" load-file-name t t))) nil t)
+(nelisp-calc-initialize)
+(dolist (token '("mode:scientific" "2" "add" "3" "mul" "4" "equals"))
+  (nelisp-calc-token token))
+(unless (equal nelisp-calc-display "14") (error "Scientific precedence failed"))
+(dolist (token '("add" "1" "equals")) (nelisp-calc-token token))
+(unless (equal nelisp-calc-display "15") (error "Scientific result continuation failed"))
+(nelisp-calc-token "angle:rad")
+(unless (eq nelisp-calc-angle 'rad) (error "Radian state failed"))
+(nelisp-calc-token "angle:deg")
+(unless (eq nelisp-calc-angle 'deg) (error "Degree state failed"))
+(nelisp-calc-token "precision:30")
+(unless (= nelisp-calc-precision 30) (error "Precision state failed"))
+(nelisp-calc-token "precision:12")
+(dolist (token '("mode:standard" "2" "add" "3" "mul" "4" "equals"))
+  (nelisp-calc-token token))
+(unless (equal nelisp-calc-display "20") (error "Standard sequential behavior failed"))
+(princ "SCIENTIFIC-TOKENS-PASS\n")

@@ -1,0 +1,42 @@
+#+TITLE: NeLisp Calc with Sumi
+
+* S1 Standalone GNU Calc engine
+** S1.1 Load genuine GNU Calc in NeLisp without a GNU Emacs process
+cmd: ../nelisp/target/nelisp.exe --load test/engine-load.el
+** S1.2 Verify precision, arithmetic, scientific functions and error results
+cmd: pwsh.exe -NoProfile -ExecutionPolicy Bypass -File tools/engine-probe.ps1 -Mode Standalone
+** S1.3 End-to-end request and response through a persistent NeLisp process
+#+NOTE: Three genuine calculations: fresh-process baseline 19622 ms; persistent process 6884 ms. Reproducer tools/engine-benchmark.ps1. No shared runtime rebuild or portable-release qualification performed.
+cmd: pwsh.exe -NoProfile -ExecutionPolicy Bypass -File tools/engine-probe.ps1 -Mode ArithmeticMailbox
+
+* S2 Standard Sumi calculator
+** S2.1 Verify standard input state, percent, repeated equals and memory
+evidence: target/session-Standalone.log sha256=522D0EB59B033BA0C5CF95E4EFB0266C4E44FE796A9AE650AAF22273A1585167
+evidence: target/desktop-memory-acceptance.json sha256=BCC6B310DB42A9B657DBC6F4C89456B260A74D01EC9D2E798BCD8604E30DC634
+** S2.2 Build native Sumi calculator window with mouse and keyboard input
+evidence: target/gui-mouse-acceptance.json sha256=FCB807E4B08C6F7B7441B0B7948ED42FCAEBA4DB4ABA3B3D7B169FDCC78EB3E5
+** S2.3 End-to-end GUI calculation using the standalone GNU Calc engine
+cmd: pwsh.exe -NoProfile -ExecutionPolicy Bypass -File tools/gui-acceptance.ps1
+
+* S3 Advanced calculation modes
+** S3.1 Scientific mode with precedence, angles and precision
+evidence: target/engine-scientificprecision.log sha256=7C38B6BE9895EED868F3CB4288F1B00A4E0AF7D6F310909CC74F4D5377E87BC5
+evidence: target/engine-scientifictokens.log sha256=F135B725440ECE7D9623B15DCFA9B9A50C01D55E6C1F6BDE436630A332C251B6
+** S3.2 Programmer mode with word widths, bases and bit operations
+evidence: target/modes-Standalone.log sha256=8815B37E96CEB847B1B417F317E599EFCBA5554BFD58DD47C7893F2757FAE8CF
+** S3.3 End-to-end scientific and programmer calculations through Sumi
+evidence: target/gui-science-acceptance.json sha256=315C07C958268D08295B51EC2AF7B44BDF2EB6801F26EF4F9CFF8A6C337E9CEA
+evidence: target/gui-programmer-acceptance.json sha256=D1C1685DA210AEC87915E162E7EF88E5CB0343371F03A76EBAA795FA3999B0F1
+
+* S4 Remaining Windows Calculator features and distribution
+** S4.1 Date arithmetic and unit conversion with tested edge cases
+evidence: target/modes-Standalone.log sha256=8815B37E96CEB847B1B417F317E599EFCBA5554BFD58DD47C7893F2757FAE8CF
+evidence: target/gui-convert-acceptance.json sha256=B6987A15FEFEEE3FD5D6BBE74B80497F8C2ADE825573F3BDBB896D925DE29758
+evidence: target/gui-date-acceptance.json sha256=238003ED2E4DD8E5EF1749918C2393BF7AF7ABCD392381AB32FF5B2D12EFF3D1
+** S4.2 Graph plotting and currency conversion with explicit rate freshness
+evidence: target/graph-Standalone.log sha256=49131A4AEEF6639D748415B366F3FBA33CB61D38E0E1FE7EEA1C5556C3195B88
+evidence: target/gui-graph-acceptance.json sha256=73563300A9BFBDFE09E91ABAE30F12B4821453ED6EECB53F5F2D55CB927AA51E
+evidence: target/gui-currency-acceptance.json sha256=06CC0392F93414F13C60DEB92356C572A9EA2F8D052491FE3F244182BB2D0540
+** S4.3 End-to-end packaged application, history, clipboard and window behavior
+#+NOTE: Relocated package, history and compact/topmost callback checks passed. Actual OS clipboard operations and whole-window visual review remain unrun while the user is working; this criterion is deliberately not marked complete. Package proof: target/package-probes/20261028-163315-830-661b0e0c/package-probe.json.
+pending
