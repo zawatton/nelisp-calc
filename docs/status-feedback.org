@@ -1,0 +1,63 @@
+#+TITLE: Canvas status feedback and post-action CPU observations
+
+The calculation canvas previously copied every status string into its GTK
+tooltip, including ordinary =ok= and calculation errors. Status already
+appears inside the canvas. The canvas now disables its tooltip while retaining
+status rendering, wait feedback and the existing redraw cache. Button help and
+settings-save feedback are unchanged.
+
+The theme evidence path also freed the result of
+=gtk_widget_get_tooltip_text=. GTK documents that result as instance-owned;
+the invalid free was removed. See the official
+[[https://docs.gtk.org/gtk4/method.Widget.get_tooltip_text.html][GTK tooltip getter ownership contract]]. A native fixture set a settings-save
+failure tooltip, called theme evidence twice and recovered the unchanged text
+without a crash. This is not evidence that the reported CPU issue was caused
+by that ownership error.
+
+* Native validation
+
+The actual old-source GUI and actual fixed-runtime backend computed7+8=15,
+then produced a divide-by-zero error. The control reported tooltip enabled
+and text equal to status; the candidate reported tooltip disabled and empty
+text for both cases. Persistent status matched the real backend in both.
+Math/error fixtures used the tooltip-only change; the final ownership fixture
+and root/live builds include the independent borrowed-pointer correction.
+The final source SHA256 is
+=8E06F318350818C4A4EF95867174814C3E808483C8CD411289A1FA58A58E144E=.
+
+The first minimized build attempted an in-use operational executable and the
+linker refused access. The existing GUI remained running. A separate
+=restart-status-fixed/= executable was then built and used for the controlled
+restart. The normal versioned GUI pointer was restored afterward.
+
+The live display2 and all history/memory hashes were preserved. Twenty-one
+requests were replayed after one startup mode; the replacement was minimized
+and not foreground. Its15s backend sample was1.35% of one core and private
+306.4->303.3MiB. The immutable runtime, evaluator and mailbox were unchanged.
+
+* CPU attribution and remaining report
+
+The user reports sustained high CPU after using the calculator and identified
+the process name as =nelisp.exe=. The exact high-CPU PID is not confirmed yet.
+Do not classify the report as a transient spike or claim it resolved.
+
+An independently owned genuine backend processed1+1 twice and a21-request
+history. Each result was2, exit0 and stderr empty. Five-second post-action
+CPU averages were1.546%,0.928% and0.929% of one core. First/second equals
+responses took0.405/0.310s wall and0.266/0.188s CPU. That probe did not
+exercise visible GUI hover/rendering and did not reproduce sustained load.
+
+One simultaneous snapshot found the real calculator GUI/backend near0.62%
+while a temporary validation runtime and a separate ngit runtime each used
+about one core. The validation child exited normally; unrelated services
+were not stopped. Those observations do not identify which PID the user saw.
+
+After restart, the calculator backend is PID20296 and GUI PID52324. A20s
+passive observation without injected input had unchanged response count22:
+backend average1.70%, peak4.65%; GUI average1.94%, peak7.74%. Another5s
+backend sample measured4.35%. Thus the sustained-high-load condition is still
+unreproduced and requires matching the user's high process to the live PID.
+CPU percentages here are for one logical core, not the whole machine.
+
+Local receipts are under =target/status-feedback-*=. The source/memory fixes
+remain intact; no core changes, staging, commit or push were performed.

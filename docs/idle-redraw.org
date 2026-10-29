@@ -1,0 +1,35 @@
+#+TITLE: State-driven native calculator polling
+
+The 100 ms mailbox timer continues to accept responses, flush queued commands,
+coalesce graph scrolling, and enforce the existing 901-tick timeout. It queues
+a canvas redraw only when the rendered display/status
+strings or acknowledged response count change. Independent string copies retain
+the previous contents before response scratch buffers are reused. The first poll
+invalidates even for initial response count zero. Comparison runs after command
+flushing so the Calculating/Starting feedback appears in the same tick.
+Status text remains inside the canvas; floating canvas status tooltips are
+disabled. Button help and settings-save feedback retain their own tooltips.
+
+The native context is 9216 bytes. Two exact 256-byte snapshots occupy
+8192-8447 and 8448-8703; state/counters occupy aligned slots 8704-8743.
+These are above the preexisting 8192-byte context and above the audited
+generator maximum literal offset 7448 (scientific selector geometry).
+The selector pointer at 7400 and its measurement slots remain independent.
+
+Existing key, gesture, preview, and appearance invalidations remain unchanged.
+Response count changes also invalidate graph data even if its display summary
+has not changed. Same-count display/status replacements remain accepted.
+
+Set =NELISP_CALC_IDLE_PROBE= to an output filename to opt into a 16-byte native
+receipt containing little-endian uint64 poll-originated redraw-request count and
+poll count. This counts invalidations, not actual GTK paint callbacks; hidden
+widgets need not paint. No receipt is written when the variable is absent.
+
+=tools/idle-redraw-probe.ps1 -Gui PATH= checks steady hidden idle, same-count
+display/status updates, and count-only updates against the real native program.
+=-TimeoutCheck= waits through the unchanged real timeout boundary and checks
+that failure feedback invalidates once. Each test owns and cleans up its GUI.
+=-ScientificCheck= runs the real standalone backend with two selector callbacks,
+Return on the selector and calculator, four mode transitions, and final 7+8=15.
+=-ControlSource PATH= rejects the old poll's unconditional redraw structurally;
+that negative control does not measure old native paint callbacks or CPU.

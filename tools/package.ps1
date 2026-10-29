@@ -2,6 +2,9 @@ param([string]$SourceRoot = (Split-Path $PSScriptRoot -Parent), [string]$MingwBi
 $ErrorActionPreference = 'Stop'
 $project = Split-Path $PSScriptRoot -Parent
 $source = (Resolve-Path -LiteralPath $SourceRoot).Path
+. (Join-Path $source 'tools/runtime.ps1')
+$runtimeSource = Resolve-CalcRuntime $source
+$runtimeColdSource = Get-CalcRuntimeColdImage $source $runtimeSource
 $dev = Split-Path $source -Parent
 if (-not $MingwBin) { $MingwBin = Split-Path (Get-Command gcc -ErrorAction Stop).Source -Parent }
 $MingwBin = (Resolve-Path -LiteralPath $MingwBin).Path
@@ -31,13 +34,25 @@ $guiSource = Join-Path $source ('target/' + $pointer)
 Copy-BundleFile $guiSource 'app/target/nelisp-calc.exe' ('app/target/' + $pointer)
 & (Join-Path $source 'tools/build-taskbar.ps1') | Out-Null
 Copy-BundleFile (Join-Path $source 'target/NeLispCalc.exe') 'NeLispCalc.exe' 'generated: tools/taskbar-launcher.c + assets/nelisp-calc.rc'
-Copy-BundleFile (Join-Path $dev 'nelisp/target/nelisp.exe') 'nelisp/target/nelisp.exe' 'nelisp/target/nelisp.exe'
+Copy-BundleFile $runtimeSource 'nelisp/target/nelisp.exe' ('selected-runtime: sha256=' + (Get-FileHash -LiteralPath $runtimeSource -Algorithm SHA256).Hash)
+$runtimeCapabilities = @{ sha256 = (Get-FileHash -LiteralPath $runtimeSource -Algorithm SHA256).Hash }
+if ($runtimeColdSource) {
+    Copy-BundleFile $runtimeColdSource 'nelisp/target/nelisp.exe.cold' ('verified runtime cold image: sha256=' + (Get-FileHash -LiteralPath $runtimeColdSource -Algorithm SHA256).Hash)
+    $runtimeCapabilities.coldSha256 = (Get-FileHash -LiteralPath $runtimeColdSource -Algorithm SHA256).Hash
+}
+if ((Get-CalcRuntimeGcPolicy $source $runtimeSource) -eq 'debt-v1') {
+    $runtimeCapabilities.startupGcPolicy = 'debt-v1'
+}
+if ($runtimeColdSource -or $runtimeCapabilities.startupGcPolicy) {
+    $runtimeCapabilities | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $bundle 'app/target/runtime-capabilities.json') -Encoding UTF8
+    $origins['app/target/runtime-capabilities.json'] = 'generated: verified runtime capabilities'
+}
 Copy-BundleTree (Join-Path $source 'lisp') 'app/lisp' 'app/lisp'
 Copy-BundleTree (Join-Path $source 'assets') 'app/assets' 'app/assets'
 Copy-BundleFile (Join-Path $source 'tools/emacs-launch.ps1') 'app/tools/emacs-launch.ps1' 'app/tools/emacs-launch.ps1'
 Copy-BundleTree (Join-Path $source 'src') 'app/src' 'app/src'
-foreach ($file in @('build.el', 'keyboard.el', 'gestures.el', 'navigation.el', 'taskbar.el', 'README.org')) { Copy-BundleFile (Join-Path $source $file) ('app/' + $file) ('app/' + $file) }
-foreach ($file in @('launch.ps1', 'update-rates.ps1', 'taskbar-launcher.c', 'build-taskbar.ps1')) {
+foreach ($file in @('build.el', 'keyboard.el', 'gestures.el', 'navigation.el', 'taskbar.el', 'scientific-controls.el', 'graph-implicit-controls.el', 'README.org')) { Copy-BundleFile (Join-Path $source $file) ('app/' + $file) ('app/' + $file) }
+foreach ($file in @('launch.ps1', 'runtime.ps1', 'update-rates.ps1', 'taskbar-launcher.c', 'build-taskbar.ps1')) {
     $scriptSource = if ($file -eq 'launch.ps1' -and $LauncherSnapshot) { $LauncherSnapshot } else { Join-Path $source ('tools/' + $file) }
     Copy-BundleFile $scriptSource ('app/tools/' + $file) ('app/tools/' + $file)
 }
@@ -55,7 +70,7 @@ $schema = Join-Path $mingwRoot 'share/glib-2.0/schemas/gschemas.compiled'
 if (Test-Path -LiteralPath $schema) { Copy-BundleFile $schema 'runtime/share/glib-2.0/schemas/gschemas.compiled' 'MINGW/share/glib-2.0/schemas/gschemas.compiled' }
 $queue = New-Object 'System.Collections.Generic.Queue[string]'
 $queue.Enqueue((Resolve-Path -LiteralPath $guiSource).Path)
-$queue.Enqueue((Resolve-Path -LiteralPath (Join-Path $dev 'nelisp/target/nelisp.exe')).Path)
+$queue.Enqueue($runtimeSource)
 $visited = @{}
 $edges = @()
 while ($queue.Count -gt 0) {

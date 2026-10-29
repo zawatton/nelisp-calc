@@ -1,0 +1,91 @@
+#+TITLE: Modern native submenu cards
+
+* Native design
+The existing mutually exclusive GTK revealers now contain a rounded card,
+a descriptive heading and a compact close icon with the accessible name
+"Close panel". The icon falls back to a multiplication sign when the theme
+does not provide window-close-symbolic. All seven mode buttons remain native
+buttons; the selected mode receives the shared accent color on startup and
+after every mode change. No calculation or keyboard dispatch is replaced.
+
+History, Memory and Settings use spaced native controls and local 14px text.
+Card headings use 16px text. Combo boxes have transparent outer nodes and
+rounded inner buttons, avoiding the rectangular outer background that
+remained visible when only the button was styled. History requests 320px
+instead of 360px so the card padding and margins fit the 381px compact window.
+Light and dark surfaces, borders, focus indicators and dropdown contents
+use the shared palette. Calculation-status tooltips remain suppressed;
+button help remains available.
+
+* Native rendering probe
+Run =tools/submenu-native-probe.ps1= after =tools/build.ps1=. It uses the
+existing hidden/offscreen header snapshot path with
+=NELISP_CALC_HEADER_PROBE=submenu=. The value =1= retains the original header
+probe behavior. No new launcher environment variable is introduced.
+
+Each of eight light/dark panel cases drives the real navigation command,
+keeps automation alive until GTK has allocated the widget tree, and renders
+both the complete native window and the actual revealer child. It writes
+=header-native.png=, =panel-native.png= and allocation TSV receipts beneath
+=target/submenu-native-<id>/=. The probe requires no backend process. Each
+owned process has a five-second timeout and unconditional cleanup. It checks
+compact geometry, card allocation, close target height, GTK/CSS diagnostics
+and unchanged foreground ownership. It never captures the desktop or
+activates a foreground window.
+
+This improves the design feedback loop: one bounded invocation produces
+eight allocated native panel images, versus zero panel-child images in the
+previous header-only probe. Popup dropdown lists are styled but were not
+physically opened or captured. Native maximize, drag and minimize remain
+outside this nonactivating test.
+
+* Verification artifacts
+Final build: =target/builds/20261029-122829-245-0e6978d8/nelisp-calc.exe=.
+Final eight-case receipt:
+=target/submenu-native-a421e2e7889b4a4c88a312d33fe559b9/receipt.json=.
+All eight cases passed without GTK/CSS diagnostics. Native child content
+allocations: Menu 238x316, History 320x126, Memory 240x234, Settings 223x174.
+The full compact window remained 381px wide and below 600px high.
+Real images were inspected in both themes, including all seven mode entries,
+the active Standard state, close icons, rounded combo controls and actions.
+
+The previous executable was rendered with the same hidden header mechanism:
+=target/submenu-native-0938fc340f4948c094e9d31670ba683a/light-menu/header-native.png=.
+It visibly shows the former square stacked mode controls and text close
+button. The new probe rejects that executable because the older build lacks
+panel-child diagnostics. This rejection is an instrumentation control,
+not a CSS quality test; the visual old/new comparison is the design evidence.
+
+Navigation regression: four native cases passed, preserving exclusive panel
+ownership, close focus restoration, actual history/memory calculations and
+mode changes. See =target/submenu-navigation.log= and its artifact directory.
+Enter regression results are recorded in =target/submenu-enter.log=.
+No existing test was removed or baseline increased.
+
+* Investigation limits
+The coordinator verified the standalone Anvil connection was healthy but
+context/dependency tools were not exposed (tools-by-intent count zero).
+Bounded syntactic searches inspected calc-navigation-controls, the enclosing
+calc-desktop-controls/calc-advanced-controls generators and setup_controls.
+Generated DSL functions are not top-level Elisp definitions; this inspection
+does not claim semantic caller-index completeness. No shared services,
+runtime binaries, engine, mailbox, launcher, taskbar or vendor files changed.
+The coordinator owns integration, live state preservation and worklog entry.
+
+* Integrated application
+The reviewed source was built in the main checkout and all eight offscreen
+rendering cases passed again, without GTK/CSS diagnostics. Representative
+full-window light Settings and dark Menu images were inspected. The receipt
+is =target/submenu-native-bf43886ee294418c9cc1a7b23da842de/receipt.json=.
+An outer shell wrapper incorrectly checked stale LASTEXITCODE after a
+PowerShell-only probe; the probe receipt and all eight cases passed. No
+passing probe was rerun for that wrapper error.
+
+The application was restarted minimized without activation. All 71 previous
+requests were replayed after startup; display 0, Standard mode and history/
+memory hashes matched. The backend remained the BAF76 application runtime.
+The 15-second sample averaged 1.35 percent of one core with private memory
+304.4 to 304.5 MiB. This does not resolve the separate sustained-CPU report.
+See =target/submenu-live-acceptance.json=. The normal versioned executable
+pointer was restored after the operational nonactivating launch.
+No staging, commit, push or shared-service restart was performed.

@@ -1,0 +1,101 @@
+#+TITLE: Genuine Calc computation cost
+
+* Scope and method
+The application still uses unmodified GNU Calc for parsing, normalization,
+constants, numeric predicates, and formatting. No result cache or arithmetic
+replacement is introduced. Only redundant parentheses around two unsigned
+decimal literals are removed for Standard binary +, -, *, and / requests.
+Negative, exponent, rational, compound, and other operands keep both groups.
+Trailing decimal points also retain grouping, so entry such as =1.= uses the
+exact pre-change input representation.
+
+The focused probe is =tools/calc-computation-probe.el=. Run it with the selected
+standalone runtime's =--load= option, =NELISP_CALC_NATIVE_GC_POLICY=debt-v1=,
+and an isolated =NELISP_CALC_TARGET= directory. It initializes through the
+application-owned backend path, which restores normal native GC policy before
+measurements. =CALC_COMPUTATION_ENGINE= optionally loads an archived engine
+source for a negative control. The root stays relative to the probe.
+
+Runtime SHA256: BAF76F0BD7F57C3786D71B1D61F7404C4A7A815E7FB22B668A64D99389CE991B.
+All timings below are wall milliseconds inside the initialized runtime. Output
+is emitted after each timed section. Function wrappers add measurement overhead;
+same-process grouped/binary pairs share those wrappers. No GUI is launched.
+
+* Root cause
+Initial warm =123+456= parsed in 134-158 ms. Constant expansion, normalization,
+=math-constp=, and formatting each took at most 1 ms. Rational and scientific
+normalization have additional genuine computation cost: =1/3+1/6= took 107 ms,
+=sqrt(2)= 284 ms, and =sin(30)= 215 ms in the first profile.
+
+The narrowed profile attributed 1632 ms cumulatively to GNU
+=math-read-preprocess-string= across nine parses, versus 0.73 ms to parse-table
+construction and 105 ms to token reading. Thus input preprocessing, rather than
+the integer arithmetic or duplicate constant predicate, dominates this case.
+
+Paired unchanged-parser expressions returned 579 in every case:
+| Input | First parse | Second parse |
+|-------+-------------+--------------|
+| 123+456 | 177.26 | 144.55 |
+| (123)+(456) | 252.44 | 230.38 |
+
+Removing unnecessary groups reduces work in the genuine GNU preprocessing and
+parser paths while preserving their semantics. It does not bypass either path.
+
+The final same-process grouped-versus-optimized binary pairs were:
+| Pair | Grouped | Optimized binary |
+|------+---------+------------------|
+| 0 | 215.28 | 135.41 |
+| 1 | 315.05 | 142.66 |
+| 2 | 213.11 | 136.12 |
+| 3 | 221.50 | 250.83 |
+Median: 218.39 versus 139.39 ms, a 36.2% reduction. The final optimized sample
+was slower; timings remain noisy and no per-request worst-case improvement is
+claimed. Normal application GC remains enabled. This complete probe consumed
+33.20 CPU seconds including startup, scientific checks, and all measurements;
+it is not a measure of request CPU savings.
+
+Session publication remained unchanged. In one instrumented 10-token sequence,
+=nelisp-calc-session-record= consumed 106.7 ms cumulatively, including 96.6 ms
+inside publication and the first session initialization. History still recorded
+exactly =123 + 456 -> 579= and =579 + 456 -> 1035= after repeated equals.
+
+* Validation and limits
+The focused probe checks nine binary cases, three angle modes, precision 20,
+parse and division errors, repeated equals, history, and exact submitted input.
+An archived pre-change engine fails the exact submitted-input assertion with
+=Redundant grouping: (123)+(456)=; it retains correct arithmetic and history.
+This negative control confirms that the optimization assertion detects the old
+behavior rather than merely exercising existing arithmetic.
+
+The existing engine-probe PowerShell harness ignores =NELISP_BIN= and hardcodes
+a sibling runtime. Therefore the existing test sources are run directly with
+the selected BAF runtime; their assertions are not changed or removed.
+The unchanged =test/engine-standard.el= (nine token cases, two ordinary-division
+cases, malformed-input and unavailable-engine controls) and
+=test/scientific-precision.el= (eight precision cases) both exited 0 with their
+PASS markers. The unchanged =test/compat-isqrt-provider.el= exited 0 with six
+numeric cases, negative-input rejection, feature-state preservation, and the
+pinned genuine GNU definition hash. The focused computation probe exited 0.
+The archived pre-change engine exited 1 at the intended grouping assertion.
+After those checks, the eligibility regexp was narrowed to require a digit
+after a decimal point. A separate three-case rendered-input check exited 0:
+=1.+2.= retained =(1.)+(2.)=, while =1.0+2.0= and =123+456= remained ungrouped.
+This check is also retained in the permanent probe. Broader passing checks were
+not repeated for this narrowing; all previously measured inputs are unchanged.
+
+Artifacts are under =target/computation-profile/=: =phases.log=,
+=grouping-before.log=, =after.log=, =paired.log=, =control.log=,
+=control.stderr=, =engine-standard.log=, =scientific-precision.log=, and
+=provider.log=. The baseline engine is archived there as =engine-before.el=.
+
+Caller inspection was bounded syntactic inspection of the engine and nearby
+modules. The shared Anvil connection had no available code-context/dependency
+operations in this session, so no semantic-completeness claim is made. The only
+two direct binary callers are immediate Standard execution and equals handling.
+No vendor, compatibility provider, session, mailbox, transport, runtime, or GC
+policy source changes are part of this slice.
+
+The baseline includes unrelated existing changes. Full rebuilds and broad gates
+are deliberately excluded: the selected runtime is read-only and the change is
+an adapter string transformation. Parent integration owns final native latency
+and CPU measurements.

@@ -1,0 +1,79 @@
+#+TITLE: Input and computation responsiveness improvements
+
+* Changes
+Native callbacks submit immediately when no request is outstanding. Queued
+tokens are sent in ordered batches of at most 16. The GUI accepts monotonic
+partial acknowledgments, updates the displayed state and retains the remaining
+outstanding count; a later batch cannot overtake an earlier one. External
+acknowledgment jumps clamp the remaining count to zero. Initial readiness and
+idle same-count feedback retain their previous behavior.
+
+One GLib polling source runs at 10 ms during normal active input and returns
+to 100 ms when idle. Waking an idle source does not repeatedly postpone an
+already active source. The 90-second wait limit uses monotonic elapsed time.
+Legacy command automation keeps its original cadence. Open failures can retry;
+ambiguous stream/close failures stop submission without replaying operations.
+Restarting the session is required after such an I/O failure.
+
+For binary +, -, * and /, two unsigned decimal literal operands no longer gain
+redundant parentheses. Genuine GNU Calc still parses, evaluates and formats the
+expression. Negative values, fractions, scientific notation, trailing decimal
+points and general expressions keep their original grouping. No evaluator,
+provider, precision, angle, core runtime, mailbox sleep or GC policy was changed.
+
+* Matched measurements
+The same independent 100 ms GTK key-signal driver was used before and after.
+Each sequential/burst case processes 19 tokens and ends at 1035 with status ok.
+Unlike the older callback-inside-poll diagnostic, this driver does not hide the
+old enqueue-to-next-poll wait. These baselines should not be mixed across methods.
+
+| Enqueue to GUI response consumption, median | Before | Integrated after |
+| Sequential digit | 323.6 ms | 217.1 ms |
+| Sequential equals | 648.6 ms | 373.2 ms |
+| Burst digit | 974.3 ms | 565.0 ms |
+| Burst equals | 2387.2 ms | 1328.7 ms |
+
+Sequential digit queue time fell from 98.3 to 0.5 ms; equals GUI polling delay
+fell from 98.0 to 14.9 ms. Sequential equals token processing fell from 350.7
+to 219.4 ms. A separate same-process genuine Calc comparison measured grouped
+versus optimized binary medians of 218.4 and 139.4 ms, with one slower optimized
+outlier. No worst-case latency guarantee is claimed.
+
+Timing logs add material I/O overhead. Endpoints are enqueue and GUI response
+consumption, with explicit offscreen Cairo draws, not physical keyboard delivery
+or compositor presentation. The timing seed lacks runtime capability metadata;
+both timing controls and candidates therefore use the same default startup
+policy and exclude startup. Production resource checks retain the hash-gated
+debt-v1 startup policy, which restores normal GC defaults before readiness.
+All 76 matched rows have nonnegative stage intervals and zero stage-sum closure
+error. The raw traces and diagnostic sources are under
+=target/responsiveness-timing-evidence/=; summary is
+=target/responsiveness-integrated-paired.json=.
+
+An intermediate final-batch-only display policy regressed digit feedback behind
+equals. It was rejected; the integrated design publishes partial results.
+The focused fixture count grew from 8 to 10 for ambiguous I/O failures, then
+12 for external jumps and idle/readiness behavior. The objective denominator
+remains six criteria.
+
+* Verification and application
+The integrated source passed 12 focused transport cases, four native navigation
+cases, four native Return/KPEnter cases and eight native panel renderings.
+The original transport fails the immediate-submit negative control. Genuine
+Calc Standard, ScientificPrecision, isqrt provider, nine focused binary cases,
+three angle modes, precision, errors, history/repeated equals and grouping
+boundary checks passed. Existing test sources were retained unchanged.
+
+Production-backend idle samples over 15 seconds measured 3.33 percent of one
+core before and 2.60 percent after, with private memory near 303 MiB and the
+post-idle 2+3 calculation returning 5. GUI diagnostic idle samples retained
+30 polls in three seconds and zero idle redraws; measured CPU time was
+187.5 ms before and 62.5 ms after. These short samples include diagnostic I/O
+and show no sampled increase, not a general CPU performance guarantee.
+
+The versioned normal build is selected by target/current-gui.txt. The user's
+application was already closed and is left closed; the next launch uses the
+new build and engine. All validation windows were hidden or offscreen.
+The sustained-CPU report remains separate and unresolved. No commit or push
+was performed. Detailed application/preservation evidence is recorded in
+=target/responsiveness-acceptance.json= and tools/ai/responsiveness-progress.org.

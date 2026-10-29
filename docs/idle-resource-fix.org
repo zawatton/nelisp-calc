@@ -1,0 +1,92 @@
+#+TITLE: Windows idle wait and calculator resource repair
+
+* Scope and runtime selection
+
+The original Windows runtime returned ENOSYS (-38) from its native nanosleep
+boundary. The process adapter kept polling until its deadline despite that
+failure. See =resource-usage-investigation.org= for the original attribution.
+
+The repair uses a finite Windows wait behind the existing native boundary;
+the asynchronous helper signals on unexpected failures instead of spinning.
+Its raw timespec allocation is retained because pointer lifetime across heap
+reloads has not been established. Actual sleeping bounds the allocation rate.
+This change does not establish that all remaining arena retention is resolved.
+
+The OS contract follows Microsoft's [[https://learn.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-waitforsingleobject][WaitForSingleObject]] timeout/return-value
+documentation and its [[https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getcurrentprocess][current-process pseudo-handle]] contract. Waiting on the
+currently executing process with a finite timeout provides an OS-backed delay.
+
+The calculator can select an app-local runtime through
+=target/current-runtime.json=. Its =path= is relative to =target/= and its
+=sha256= must match the selected executable. Missing or changed selections
+fail visibly. =NELISP_BIN= remains an explicit override; absent a selection,
+the existing sibling runtime is used. Shared runtime executables are never
+replaced by selecting an app-local runtime.
+
+Packaging uses the same resolver and copies the selected runtime into the
+portable package's existing runtime location. The source selection is not
+copied into the bundle. A running calculator retains its current backend;
+the selection takes effect on the next launch.
+
+The mailbox now waits 100 ms between scans, matching the GUI's existing
+100 ms mailbox timer. Its adapter poll quantum is bound to the same interval;
+earlier timer deadlines still shorten waits. This reduces redundant process
+pump bookkeeping without removing timers or changing the GUI timeout.
+
+* Focused checks
+
+=test/runtime-selection-test.ps1= exercises fallback, selected hash, mutation,
+override, traversal rejection and missing override rejection (six checks).
+
+=tools/idle-resource-probe.ps1 -Runtime PATH -Seconds 15= starts a fresh genuine
+Calc mailbox, waits for response zero, samples steady CPU/private memory,
+submits 2 + 3, requires four acknowledgements and result 5, and stops only
+its own child. The report records executable identity, CPU as a percentage
+of one logical core, private memory, exact response, exit status and stderr.
+The default acceptance is at most 5% of one core, at most 32 MiB growth,
+and at most 512 MiB private memory after the sample;
+it is a short steady-state regression check, not a long-run leak guarantee.
+The original executable must fail the CPU criterion while still calculating 5.
+
+GUI invalidation checks are documented in =idle-redraw.org=. Hidden GUI
+counters measure redraw requests; they do not measure displayed paint costs.
+
+* Verification record
+
+The original fresh mailbox consumed 106.467% of one logical CPU over 5.019 s,
+with private memory 366.434 -> 367.941 MiB. The native wait repair alone reduced
+the actual mailbox to 6.195% over 30 s, which still failed the unchanged 5%
+criterion. A 50 ms adapter-quantum binding measured 5.413%, also a failure.
+Both failed reports are retained. Aligning the mailbox and adapter waits with
+the GUI's existing 100 ms timer measured 3.437% over 30.006 s; private memory
+322.586 -> 321.859 MiB, result 5, four acknowledgements, exit 0, empty stderr.
+The accepted runtime SHA256 is
+=BAF76F0BD7F57C3786D71B1D61F7404C4A7A815E7FB22B668A64D99389CE991B=.
+
+The short test prevents the idle CPU/allocation spin regression. Roughly
+320 MiB of startup private memory remains, and this does not prove that
+long-running arena retention is fixed. The existing user backend was not
+restarted, so its high-water memory and old wait behavior remain until exit.
+
+Native wait regression 8/8, host boundary/error tests 4/4, and native buffer
+smoke 21/21 passed. The first 8 MiB-stack build host overflowed; the existing
+64 MiB-stack host completed a cached recovery in about 13m38s. Its detached
+build exit code was not retained; runtime version, native tests and buffer
+smoke each exited 0. Existing namespace inventory and process-target host
+tests still fail, the latter reproduced against the exact original seed.
+Baselines were unchanged; full repository compile/test gates were not run.
+
+A hidden native session using the accepted runtime converted UK gallons,
+evaluated inverse Grad, checked programmer remainder, plotted an implicit
+circle (58 segments, 175 rows), switched back to Standard and computed 5.
+Source selection and portable-package verification are separate evidence.
+The default source launcher computed 5 using the selected app-local runtime.
+The portable folder was relocated to a path containing spaces, all 3056
+manifest entries were hash checked, and hidden arithmetic computed 15 with
+a sanitized PATH. Its runtime hash matched the selected repaired executable.
+This is local relocation validation, not testing on a clean Windows machine.
+
+The progress ledger is =tools/ai/idle-resource-fix-progress.org=. Untracked
+diagnostic evidence lives under =target/= and is unavailable in a fresh
+source checkout. The two isolated implementation workers explicitly used
+Codex gpt-6.1-sol; external-model token and cost totals were unavailable.

@@ -15,6 +15,27 @@
 (defvar nelisp-calc-mode "standard")
 (defvar nelisp-calc-angle 'deg)
 (defvar nelisp-calc-precision 12)
+(defvar nelisp-calc-ascii-input-settings nil)
+
+(defun nelisp-calc-initialize-owned-backend (owns-default-policy)
+  "Initialize a fresh dedicated backend with bounded temporary GC debt.
+OWNS-DEFAULT-POLICY must only be non-nil in the application-owned mailbox
+process.  Its trusted launcher must attest selector support through
+NELISP_CALC_NATIVE_GC_POLICY=debt-v1.  Embedders retain their own policy.
+The native debt floor and percentage return to their documented defaults
+before any ready response, including when initialization signals an error."
+  (if (and owns-default-policy
+           (equal (getenv "NELISP_CALC_NATIVE_GC_POLICY") "debt-v1")
+           (fboundp 'nelisp--debug-switch)
+           (fboundp 'nelisp--gc-pressure))
+      (unwind-protect
+          (progn
+            (nelisp--debug-switch 30 4194304)
+            (nelisp--debug-switch 31 100)
+            (nelisp-calc-initialize))
+        (nelisp--debug-switch 30 0)
+        (nelisp--debug-switch 31 0))
+    (nelisp-calc-initialize)))
 
 (defun nelisp-calc-initialize ()
   "Load unmodified GNU Calc, preserving the exact initialization error."
@@ -57,15 +78,41 @@
             nelisp-calc-status (concat "engine-unavailable:" nelisp-calc-engine-error))
     (setq nelisp-calc-display "0" nelisp-calc-status "ready")))
 
-(defun nelisp-calc-evaluate (expression &optional precision)
-  "Return a structured response from GNU Calc, never another evaluator."
+(defun nelisp-calc-expand-constants (expression)
+  "Materialize GNU Calc constants under the caller's active precision."
+  (cond ((and (consp expression) (eq (car expression) 'var) (eq (cadr expression) 'pi)) (math-pi))
+        ((and (consp expression) (eq (car expression) 'var) (eq (cadr expression) 'e)) (calc-normalize '(calcFunc-exp 1)))
+        ((consp expression) (mapcar #'nelisp-calc-expand-constants expression))
+        (t expression)))
+
+(defun nelisp-calc-grad-expression (expression)
+  "Adapt parsed circular trig nodes from grads to GNU Calc degrees."
+  (if (not (consp expression)) expression
+    (let ((node (mapcar #'nelisp-calc-grad-expression expression)))
+      (cond ((memq (car node) '(calcFunc-sin calcFunc-cos calcFunc-tan))
+             (list (car node) (list '* (cadr node) '(frac 9 10))))
+            ((memq (car node) '(calcFunc-arcsin calcFunc-arccos calcFunc-arctan))
+             (list '* node '(frac 10 9)))
+            (t node)))))
+
+(defun nelisp-calc-evaluate (expression &optional precision numeric-operands)
+  "Return a structured response from GNU Calc, never another evaluator.
+NUMERIC-OPERANDS is an internal validated (LEFT OPERATOR RIGHT) request.
+Its literal reader is the same GNU reader used by `math-read-exprs'."
   (if nelisp-calc-engine-error
       (list :ok nil :kind 'engine-unavailable :error nelisp-calc-engine-error)
     (condition-case err
         (let* ((calc-internal-prec (or precision nelisp-calc-precision))
-               (calc-angle-mode nelisp-calc-angle)
+               (calc-angle-mode (if (eq nelisp-calc-angle 'grad) 'deg nelisp-calc-angle))
                (calc-simplify-mode nil)
-               (parsed (math-read-exprs expression))
+               (parsed (if numeric-operands
+                           (list (list (intern (nth 1 numeric-operands))
+                                       (math-read-number (nth 0 numeric-operands))
+                                       (math-read-number (nth 2 numeric-operands))))
+                         (math-read-exprs expression)))
+               (parsed (mapcar #'nelisp-calc-expand-constants parsed))
+               (parsed (if (eq nelisp-calc-angle 'grad)
+                           (mapcar #'nelisp-calc-grad-expression parsed) parsed))
                (normalized
                 (progn
                   (when (or (eq (car parsed) 'error) (/= (length parsed) 1))
@@ -90,9 +137,9 @@
             (list :ok nil :kind 'calculation-error :error (prin1-to-string value))))
       (error (list :ok nil :kind 'calculation-error :error (prin1-to-string err))))))
 
-(defun nelisp-calc-compute ()
+(defun nelisp-calc-compute (&optional numeric-operands)
   "Evaluate the current expression and update the display."
-  (let ((result (nelisp-calc-evaluate nelisp-calc-expression)))
+  (let ((result (nelisp-calc-evaluate nelisp-calc-expression nil numeric-operands)))
     (if (plist-get result :ok)
         (setq nelisp-calc-display (plist-get result :value)
               nelisp-calc-expression nelisp-calc-display
@@ -110,15 +157,50 @@
         nelisp-calc-accumulator nil nelisp-calc-operator nil
         nelisp-calc-last-operator nil nelisp-calc-last-operand nil))
 
-(defun nelisp-calc-apply (expression)
+(defun nelisp-calc-apply (expression &optional numeric-operands)
   "Calculate EXPRESSION and return its numeric value, or nil on error."
   (setq nelisp-calc-expression expression)
-  (nelisp-calc-compute)
+  (nelisp-calc-compute numeric-operands)
   (and (equal nelisp-calc-status "ok") nelisp-calc-display))
+
+(defun nelisp-calc-ascii-number-input-p ()
+  "Whether GNU input customization leaves ASCII numeric syntax unchanged."
+  (and (null calc-language) (null calc-language-input-filter)
+       (= calc-number-radix 10)
+       (null calc-user-parse-table) (null calc-user-parse-tables)
+       (null (get calc-language 'math-parse-table))
+       (or (null calc-user-tokens) (equal calc-user-tokens ""))
+       (null calc-user-token-chars)
+       (let ((settings (list math-read-replacement-list
+                             math-read-superscripts math-read-subscripts)))
+         (or (equal settings nelisp-calc-ascii-input-settings)
+             (and (not (string-match "[0-9.+*/-]" math-read-superscripts))
+                  (not (string-match "[0-9.+*/-]" math-read-subscripts))
+                  (catch 'changed
+                    (dolist (replacement math-read-replacement-list)
+                      (when (string-match "\\`[0-9.+*/-]*\\'" (car replacement))
+                        (throw 'changed nil)))
+                    ;; Copy strings as well as conses: in-place customizations
+                    ;; must invalidate the approved-input settings snapshot.
+                    (setq nelisp-calc-ascii-input-settings
+                          (list (mapcar (lambda (replacement)
+                                          (mapcar #'copy-sequence replacement))
+                                        math-read-replacement-list)
+                                (copy-sequence math-read-superscripts)
+                                (copy-sequence math-read-subscripts)))
+                    t))))))
 
 (defun nelisp-calc-binary (left operator right)
   "Apply a binary OPERATOR using genuine Calc."
-  (nelisp-calc-apply (concat "(" left ")" operator "(" right ")")))
+  ;; Only the application's default input grammar permits direct literal reads.
+  ;; Custom languages, filters and parse tables must retain the GNU text parser.
+  (let ((decimal "\\`[0-9]+\\(?:\\.[0-9]+\\)?\\'"))
+    (if (and (member operator '("+" "-" "*" "/"))
+             (string-match decimal left) (string-match decimal right)
+             (nelisp-calc-ascii-number-input-p))
+        (nelisp-calc-apply (concat left operator right)
+                           (list left operator right))
+      (nelisp-calc-apply (concat "(" left ")" operator "(" right ")")))))
 
 (defun nelisp-calc-core-token (token)
   "Consume a Standard calculator token with immediate binary execution."
@@ -138,7 +220,7 @@
    ((member token '("mode:scientific" "mode:standard"))
     (setq nelisp-calc-mode (substring token 5))
     (nelisp-calc-reset))
-   ((member token '("angle:deg" "angle:rad"))
+   ((member token '("angle:deg" "angle:rad" "angle:grad"))
     (setq nelisp-calc-angle (intern (substring token 6))
           nelisp-calc-status "ready"))
    ((and (> (length token) 10) (equal (substring token 0 10) "precision:"))
@@ -151,10 +233,19 @@
            (function (cdr (assoc name '(("sqrt" . "sqrt") ("sin" . "sin")
                                        ("cos" . "cos") ("tan" . "tan")
                                        ("log" . "log10") ("ln" . "ln")
-                                       ("exp" . "exp")))))
+                                       ("exp" . "exp")
+                                       ("asin" . "arcsin") ("acos" . "arccos") ("atan" . "arctan")
+                                       ("sinh" . "sinh") ("cosh" . "cosh") ("tanh" . "tanh")
+                                       ("asinh" . "arcsinh") ("acosh" . "arccosh") ("atanh" . "arctanh")))))
            (value nelisp-calc-display))
       (cond
        (function (nelisp-calc-apply (concat function "(" value ")")))
+       ((equal name "pi")
+        (let ((nelisp-calc-angle 'rad)) (nelisp-calc-apply "arccos(-1)")))
+       ((equal name "e") (nelisp-calc-apply "exp(1)"))
+       ((equal name "pow10") (nelisp-calc-apply (concat "10^(" value ")")))
+       ((equal name "pow2") (nelisp-calc-apply (concat "2^(" value ")")))
+       ((equal name "cuberoot") (nelisp-calc-apply (concat "sign(" value ")*abs(" value ")^(1/3)")))
        ((equal name "square") (nelisp-calc-apply (concat "(" value ")^2")))
        ((equal name "reciprocal") (nelisp-calc-apply (concat "1/(" value ")")))
        ((equal name "factorial") (nelisp-calc-apply (concat "(" value ")!")))

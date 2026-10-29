@@ -293,18 +293,26 @@ one backend action. Caps Lock and Num Lock do not disable ordinary keys.
 | Calculator | keypad digits, operators, decimal, Enter | Same numeric actions |
 | Calculator | Escape / Delete / Backspace / F9 | Clear / clear entry / delete last digit / sign |
 | Standard, Scientific | R / @ / % | Reciprocal / square root / percent |
-| Scientific | F3 / F4 | Degrees / radians |
+| Scientific | F3 / F4 / F5 | Grad / degrees / radians |
+| Scientific | P / Shift+E | Pi / Euler constant |
+| Scientific | Shift+S / O / T | Inverse sine / cosine / tangent |
+| Scientific | Ctrl+S / O / T | Hyperbolic sine / cosine / tangent |
+| Scientific | Ctrl+Shift+S / O / T | Inverse hyperbolic functions |
+| Scientific | Ctrl+G / G / B / Y | 10^x / 2^x / real cube root / power |
 | Scientific | L / N / O / Q / S / T | log / ln / cos / square / sin / tan |
 | Scientific | Ctrl+N / ! / ^ | exp / factorial / power |
 | Programmer | F2 / F3 / F4 / F12 | 32 / 16 / 8 / 64 bit word |
 | Programmer | F5 / F6 / F7 / F8 | Hex / decimal / octal / binary |
 | Programmer | A-F, < >, \vert ~ & | Hex digits, shift left/right, OR/NOT/AND |
+| Programmer | % | Fixed-width integer remainder |
 
-Shifted letters are not aliases for unshifted scientific functions. Grad,
-pi, inverse-trig Shift shortcuts, programmer modulo, and other combinations
-outside this table remain unsupported. Ctrl/Alt/Super/Hyper/Meta combinations
-do not insert ordinary calculator digits or operators. Ctrl+Shift combinations
-do not alias the plain Ctrl actions.
+Shifted letters follow their explicit mappings. Other combinations outside
+this table remain unsupported; modifier chords do not insert ordinary digits
+or alias a different chord. The angle function keys correct the previous
+F3=degrees/F4=radians mapping using Microsoft's pinned resource definitions.
+The scientific page's secondary-function selector exposes the added actions
+without increasing the native window beyond the verified compact height.
+See =docs/shortcut-parity.org= for sources, controls and remaining mappings.
 
 The global mode/memory controller runs in GTK's capture phase. The calculator
 controller runs in the bubble phase, after native controls, and ignores global
@@ -377,11 +385,38 @@ The integrated standalone suite covering two plots and currency cases took
 An isolated exact-exponentiation comparison measured 1.0472 seconds for the
 old loop and 0.08156 seconds for squaring, using fresh standalone processes.
 
-Windows Calculator parity is not complete. Full Windows shortcut/unit-catalog
-equivalence and implicit-equation plotting remain
-outside this version. Whole-window visual
-review and actual system clipboard verification are deferred while the user
-is working; these are not reported as passing checks.
+The converter exposes 134 entries in 12 categories: all 132 real units in the
+pinned Microsoft catalog, plus the preserved =gal= and =turn= compatibility
+entries. US/Imperial measures and decimal/IEC data units remain distinct.
+The 26 comparison-only whimsical entries are excluded. Factors retain exact
+Calc expressions or decimal literals; documented Microsoft source rounding
+is retained. See =docs/unit-catalog-parity.org=.
+
+Graph mode accepts implicit equations such as =x^2+y^2=25= and =x*y=1=.
+It parses the residual once and evaluates samples through genuine GNU Calc.
+The default contour grid has 16 cells per axis, with a supported 8--24 range
+and a 2048-row output budget. Small components and singularities can be missed
+by this bounded approximation. Failed plots retain the previous accepted
+expression, range and image. See =docs/implicit-graphs.org=.
+
+Windows Calculator parity is not complete. Remaining shortcut functions,
+implicit inequalities, physical keyboard/device routing, whole-window visual
+review and system clipboard verification retain separate acceptance work.
+Older Windows runtimes return ENOSYS from nanosleep and spin while idle.
+Use a runtime containing the Windows wait repair; =tools/idle-resource-probe.ps1=
+verifies the actual mailbox. A verified app-local runtime can be selected with
+=target/current-runtime.json=, and packaging copies that selection. See
+=docs/idle-resource-fix.org= for measurements, selection rules and remaining
+memory limits. Existing sessions use their original backend until restarted.
+Unchanged request logs now skip reading and scanning their backlog, and idle
+mailboxes use the existing native sleep when no process or timer needs pumping.
+The100ms polling interval is retained. See =docs/mailbox-idle.md= for protocol
+limits and measurements with request history.
+Verified runtimes can also use a temporary startup GC allocation budget,
+reducing measured Standard private memory by over23percent. The original
+budget is restored before readiness; collection frequency and startup time
+can increase. Hash-bound capability metadata prevents enabling this policy
+for an unverified runtime. See =docs/memory-footprint.org=.
 
 Dependencies resolve relative to the checkout or explicit environment
 overrides: =../nelisp/=, =../nelisp-emacs/vendor/emacs-lisp/= and the installed

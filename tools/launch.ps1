@@ -11,6 +11,8 @@ if (Test-Path -LiteralPath $guiPointer) {
 }
 $savedEnvironment = @{}
 $savedEnvironment['NELISP_CALC_THEME_FILE'] = $env:NELISP_CALC_THEME_FILE
+$savedEnvironment['NELISP_CALC_NATIVE_GC_POLICY'] = $env:NELISP_CALC_NATIVE_GC_POLICY
+$savedEnvironment['NELISP_CALC_HEADER_PROBE'] = $env:NELISP_CALC_HEADER_PROBE
 foreach ($name in @('PATH', 'NELISP_CALC_TARGET', 'NELISP_CALC_KEYS', 'NELISP_CALC_BURST', 'NELISP_CALC_MOUSE', 'NELISP_CALC_SMOKE', 'NELISP_CALC_COMMANDS', 'NELISP_CALC_HIDDEN', 'NELISP_CALC_TODAY', 'NELISP_CALC_REFRESH_COMMAND', 'NELISP_CALC_RATES')) {
     $savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
 }
@@ -18,6 +20,7 @@ $backend = $null
 $gui = $null
 $interactionPassed = $false
 try {
+    $env:NELISP_CALC_HEADER_PROBE = $null
     $bundledDll = @((Join-Path $projectRoot 'runtime/bin'), (Join-Path $projectRoot 'runtime'), (Join-Path (Split-Path $projectRoot -Parent) 'runtime/bin')) | Where-Object { Test-Path -LiteralPath (Join-Path $_ 'libgtk-4-1.dll') } | Select-Object -First 1
     $mingwBin = if ($env:NELISP_CALC_DLL_DIR) { $env:NELISP_CALC_DLL_DIR } elseif ($env:MINGW_BIN) { $env:MINGW_BIN } elseif ($bundledDll) { $bundledDll } else { Split-Path (Get-Command gcc -ErrorAction Stop).Source -Parent }
     $env:PATH = "$mingwBin;$env:PATH"
@@ -43,8 +46,9 @@ try {
         Get-Item (Join-Path $artifactRoot 'native-smoke.png')
         return
     }
-    $nelispBin = if ($env:NELISP_BIN) { $env:NELISP_BIN } else { Join-Path (Split-Path $projectRoot -Parent) 'nelisp/target/nelisp.exe' }
-    if (-not (Test-Path -LiteralPath $nelispBin)) { throw 'Standalone NeLisp unavailable: set NELISP_BIN' }
+    . (Join-Path $PSScriptRoot 'runtime.ps1')
+    $nelispBin = Resolve-CalcRuntime $projectRoot
+    $env:NELISP_CALC_NATIVE_GC_POLICY = Get-CalcRuntimeGcPolicy $projectRoot $nelispBin
     $engineRoot = if ($env:NELISP_CALC_ENGINE_ROOT) { $env:NELISP_CALC_ENGINE_ROOT } else { $projectRoot }
     if (-not $env:NELISP_CALC_RATES) { $env:NELISP_CALC_RATES = Join-Path $artifactRoot 'currency-rates.tsv' }
     $refreshScript = if ($env:NELISP_CALC_RATES_UPDATE_SCRIPT) { $env:NELISP_CALC_RATES_UPDATE_SCRIPT } else { Join-Path $projectRoot 'tools/update-rates.ps1' }
@@ -141,7 +145,11 @@ try {
     }
     } finally {
         foreach ($name in $savedEnvironment.Keys) {
-            [Environment]::SetEnvironmentVariable($name, $savedEnvironment[$name], 'Process')
+            if ($null -eq $savedEnvironment[$name]) {
+                Remove-Item -LiteralPath ('Env:' + $name) -ErrorAction SilentlyContinue
+            } else {
+                [Environment]::SetEnvironmentVariable($name, $savedEnvironment[$name], 'Process')
+            }
         }
     }
 }

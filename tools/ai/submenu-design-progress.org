@@ -1,0 +1,24 @@
+#+TITLE: Modern native submenu design
+
+* S1 Panel design
+** S1.1 Add coordinated panel cards, headings, spacing and controls
+evidence: build.el sha256=5B4321A02ED99EA42F62D690E086E511956811891137399AF6D73B9C87257D8A
+evidence: navigation.el sha256=BE9B486AFE8171CB0D3A2882A0514C05A69DF980FB6D640CE29C364D9AF7B552
+** S1.2 Expose a visible active mode and accessible close actions
+evidence: src/nelisp-calc-gui.el sha256=985F878CC5A0B28108A0D9DA6C4E4B6D813D64BE4AF5EA5D53C37D40B64AD500
+evidence: target/immediate-panels.log sha256=87237D79FDBBD29359C430DCB714AB172F5B2B76DC5FDB71DC6C8FA05AF31DFB
+#+NOTE: Transport changes retain the panel design; all eight integrated native panel renderings passed without activation.
+evidence: target/submenu-native-08330c33b577497e820c81c4638a26c4/receipt.json sha256=420260FFB9F79E7B7D4A3E73FBDE1D0A04550249DC58DEC0C916A2C89D16D8D1
+evidence: target/submenu-native-bf43886ee294418c9cc1a7b23da842de/receipt.json sha256=613B96D7BB3FA170D76F2EF3963F4A8BCA3878738CE0B90A53464224BFD088A3
+** S1.3 Inspect real native panels in light and dark without activation
+evidence: target/submenu-native-bf43886ee294418c9cc1a7b23da842de/receipt.json sha256=613B96D7BB3FA170D76F2EF3963F4A8BCA3878738CE0B90A53464224BFD088A3
+
+* S2 Integration
+** S2.1 Preserve mode changes, panel exclusivity and keyboard calculation
+evidence: target/submenu-navigation.log sha256=185513895BB01CF2F7F353A49CC4A2854789F7DB442773ABB46386115E194538
+evidence: target/submenu-enter.log sha256=811B7F4B29FABB5E60467036B775775333D5658F302351F2E9E6EC6478307972
+** S2.2 Review isolated changes and verify other source remains intact
+evidence: target/submenu-preservation.json sha256=caef98caa2498476663d672e5b77949cca0c4544599f1f923affec90e8b3dae7
+** S2.3 Apply without activation while preserving live state
+cmd: python -c 'import json; from pathlib import Path; r=json.loads(Path("target/submenu-live-acceptance.json").read_text(encoding="utf-8-sig")); assert r["pass"] and r["minimized"] and r["historyAndMemoryMatch"]'
+evidence: target/submenu-live-acceptance.json sha256=66204DDD292FC0173DD688F86BE9F3EFB3A5B3CAFE287AB8210B292CB766D746

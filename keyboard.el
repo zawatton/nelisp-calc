@@ -12,14 +12,20 @@
                    (setq tail `(if ,(car row) (seq ,@(unless mode '((if (= (shortcut_editable_focus ctx) 1) 0 (extern-call gtk_widget_grab_focus (ptr-read-u64 ctx 8))))) (,(if mode 'emit_command 'send_command) ctx (data-addr ,id)) 1) ,tail)))))
              tail))
          (key (value) `(= keyval ,value))
-         (letter (value) `(and (= (logand state 1) 0) (or (= keyval ,value) (= keyval ,(- value 32))))))
+         (letter (value) `(and (= (logand state 1) 0) (or (= keyval ,value) (= keyval ,(- value 32)))))
+         (shift-letter (value) `(and (= (logand state 1) 1) (or (= keyval ,value) (= keyval ,(- value 32))))))
       (let* ((memory (dispatch (cl-loop for (code token) in '((109 "memory:store") (112 "memory:add") (113 "memory:sub") (114 "memory:recall") (108 "memory:clear")) collect (list (letter code) token))))
              (modes (dispatch (cl-loop for (code token) in '((49 "mode:standard") (50 "mode:scientific") (51 "mode:programmer") (52 "mode:date") (53 "mode:graph")) collect (list (key code) token))))
              (graph (dispatch (list (list (key 65451) "graph:nav:in") (list (key 65453) "graph:nav:out"))))
              (scientific (dispatch (append
-                                   (cl-loop for (code token) in '((65472 "angle:deg") (65473 "angle:rad") (33 "function:factorial") (94 "power")) collect (list (key code) token))
-                                   (cl-loop for (code token) in '((108 "function:log") (110 "function:ln") (111 "function:cos") (113 "function:square") (115 "function:sin") (116 "function:tan")) collect (list (letter code) token)))))
+                                   (cl-loop for (code token) in '((65472 "angle:grad") (65473 "angle:deg") (65474 "angle:rad") (33 "function:factorial") (94 "power")) collect (list (if (> code 65000) `(and (= (logand state 1) 0) ,(key code)) (key code)) token))
+                                   (cl-loop for (code token) in '((108 "function:log") (110 "function:ln") (111 "function:cos") (113 "function:square") (115 "function:sin") (116 "function:tan") (112 "function:pi") (98 "function:cuberoot") (103 "function:pow2") (121 "power")) collect (list (letter code) token))
+                                   (cl-loop for (code token) in '((115 "function:asin") (111 "function:acos") (116 "function:atan") (101 "function:e")) collect (list (shift-letter code) token)))))
+             (scientific-control (dispatch (append
+                                   (cl-loop for (code token) in '((115 "function:sinh") (111 "function:cosh") (116 "function:tanh") (103 "function:pow10") (110 "function:exp")) collect (list (letter code) token))
+                                   (cl-loop for (code token) in '((115 "function:asinh") (111 "function:acosh") (116 "function:atanh")) collect (list (shift-letter code) token)))))
              (programmer (dispatch (append
+                                   (list (list (key 37) "prog:mod"))
                                    (cl-loop for (code token) in '((65471 "prog:word:32") (65472 "prog:word:16") (65473 "prog:word:8") (65474 "prog:base:hex") (65475 "prog:base:dec") (65476 "prog:base:oct") (65477 "prog:base:bin") (65481 "prog:word:64") (60 "prog:shl") (62 "prog:shr") (124 "prog:or") (126 "prog:not") (38 "prog:and")) collect (list (key code) token))
                                    (cl-loop for code from 97 to 102 collect (list (letter code) (upcase (char-to-string code)))))))
              (ordinary (dispatch (append
@@ -29,16 +35,16 @@
         (push `(defun on_global_key (controller keyval keycode state ctx)
                  (let ((modifiers (logand state 469762061)))
                    (if (= modifiers 8) ,modes
-                     (if (= modifiers 4)
+                     (if (or (= modifiers 4) (= modifiers 5))
                        (if (and (= (ptr-read-u64 ctx 3120) 5) (or (= keyval 65451) (= keyval 65453))) ,graph
-                         (if (and (= (ptr-read-u64 ctx 3120) 1) ,(letter 110))
-                           (seq (send_command ctx (data-addr shortcut_exp)) 1) ,memory))
+                         (let ((special (if (and (= (ptr-read-u64 ctx 3120) 1) (= (shortcut_editable_focus ctx) 0)) ,scientific-control 0)))
+                           (if (= special 1) 1 (if (= modifiers 4) ,memory 0))))
                        0)))) forms)
         (push `(defun on_key (controller keyval keycode state ctx)
                        (if (/= (logand state 469762060) 0) 0
                          (if (= (shortcut_editable_focus ctx) 1) 0
                           (if (and (or (= keyval 65293) (= keyval 65421)) (= (shortcut_area_focus ctx) 0)) 0
-                          (if (and (> (ptr-read-u64 ctx 3120) 1) (or ,(letter 114) (= keyval 64) (= keyval 37))) 0
+                          (if (and (> (ptr-read-u64 ctx 3120) 1) (or ,(letter 114) (= keyval 64) (and (/= (ptr-read-u64 ctx 3120) 2) (= keyval 37)))) 0
                            (let ((special (if (= (ptr-read-u64 ctx 3120) 1) ,scientific
                                             (if (= (ptr-read-u64 ctx 3120) 2) ,programmer 0))))
                              (if (= special 1) 1 ,ordinary))))))) forms)

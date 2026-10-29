@@ -1,0 +1,41 @@
+#+TITLE: Bounded genuine Calc implicit contours
+
+* Input and evaluation
+Bare expressions in x retain y=f(x) sampling. An explicit y=expression
+without y on the right uses the same explicit sampler. Other single equalities
+are residuals LHS-RHS=0; bare expressions containing y are residuals =0.
+Write multiplication explicitly, for example x*y=1. Unknown identifiers,
+unknown functions, multiple equalities, and degenerate all-zero sampled
+residuals fail visibly. A valid residual with no viewport intersection
+publishes an empty contour. Failed candidate expressions and viewports keep
+the previously accepted expression, viewport, and graph data.
+
+The expression is parsed once by GNU Calc math-read-exprs. Substitution
+replaces genuine Calc variable nodes with Calc numeric nodes. calc-normalize
+and math-format-value evaluate every residual with the selected precision
+and angle mode. Native floats handle only viewport geometry and interpolation.
+There is no stock Emacs backend, Lisp eval of user text, or formula fallback.
+
+* Bounds and geometry
+The default is 16 by 16 cells, 289 Calc residual samples. The supported
+resource setting is 8..24 cells. Each cell has the same top-left to bottom-right
+diagonal; triangulation gives deterministic saddle topology. Undefined real
+corner samples remove adjacent triangles. This is a bounded approximation,
+not a topology or domain proof: subcell components and singularities can be
+missed. Flat zero regions are rejected if every defined sample is zero.
+
+Each triangle segment is emitted as two SCG1 point rows and a break row,
+preventing connections between unrelated contours. The output limit is 682
+segments and 2048 protocol rows including the header. Exceeding the limit
+fails before atomic publication. The native graph_points reader must accept
+2048 rows; graph-implicit-controls.el supplies a scoped generated-DSL transform
+for the existing Cairo renderer. The coordinator must load that module and
+apply calc-implicit-controls after other program transforms.
+
+* Validation
+test/implicit-graph-test.el checks circle extents and residuals, hyperbola
+branch separation, resource bounds, errors and rollback, empty contours,
+explicit graphs, and implicit pan/zoom. Run tools/implicit-graph-probe.ps1
+separately in Host and Standalone modes. Host results are reference results,
+not evidence that the production backend ran. Native hidden-window checks
+must use the integrated executable after its generated-program transform.

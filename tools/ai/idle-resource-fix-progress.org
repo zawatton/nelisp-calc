@@ -1,0 +1,27 @@
+#+TITLE: Fix Windows calculator idle resource usage
+
+* S1 Native wait and bounded idle
+** S1.1 Preserve existing changes and reproduce failed wait against the original binary
+evidence: target/idle-fix-preservation.json sha256=9513551A13C12BA0B4B0E812F233E276DD90DE1C099AC3116245A85EB56498A7
+evidence: target/idle-fix-old-control.log sha256=73BE557C78CA5E302E74A5D3380332602479136607CB5133E9AC2F585A677B43
+** S1.2 Dedicated runtime waits correctly and propagates failed waits without spinning
+evidence: target/idle-fix-runtime-evidence/provenance.json sha256=DC94259EBB215BCD3956F636C6DADB6B50A9DE275DBDE27157F69F493F55C491
+evidence: target/idle-fix-runtime-evidence/candidate-test.json sha256=1AC3C0D28564FC77B22FE32F9A802616B19EED03D34FE996718BDE05702D2703
+#+NOTE: Native8/8, host4/4, buffer21/21 pass. Existing namespace/process-target host failures remain documented; detached build exit code was unavailable.
+** S1.3 Fresh Calc mailbox stays responsive with low idle CPU and bounded memory
+cmd: python -c 'import json; from pathlib import Path; assert json.loads(Path("target/idle-fix-backend-acceptance.json").read_text(encoding="utf-8-sig"))["pass"]'
+evidence: target/idle-fix-backend-acceptance.json sha256=9B34F67FCFFFA1EB49CC11287998D7D75DB47A518D473D30206ACA7A8653F215
+
+* S2 Calculator integration
+** S2.1 Select the verified runtime without replacing shared executables
+evidence: target/idle-fix-runtime-selection.json sha256=5EE1044188718331FC0EC64A16F89BAFF9DBA12DDD98BBBD0BDDFC56DC9C02CB
+evidence: target/runtime-selection-test.log sha256=90B2321AF45C910CCE633CE983981B4E72E3848B58CE2E0B6FDC96942072063E
+** S2.2 Redraw only when calculator state changes and retain interaction behavior
+evidence: target/idle-fix-gui-evidence/acceptance.json sha256=9DCD5E13FDCC13982716FA3A858D9C2105544327230C3CECF8E7A843B9D2396A
+evidence: target/idle-fix-gui-evidence/old-control.log sha256=5B5605DEAC63D7AB4EAB8AC94963F7056F4AC26E909F9DD1613DA9405DD6697F
+#+NOTE: Native idle, actual timeout and scientific/Return E2E use the repaired source. The old-source control is structural, not a displayed-paint benchmark.
+** S2.3 Hidden launch calculates correctly and demonstrates reduced steady resource usage
+evidence: target/idle-fix-native-acceptance.json sha256=E5D1DE73937A6DCB8EFCCD88D02D8D496A82A445E1F43DDE9AF2AE64E815C8A7
+evidence: target/idle-fix-default-launch.log sha256=1DB0E072B711DF52225C43DBF4E4B8DDDF099B195A39C33FBD5BC4E7D08A18E3
+evidence: target/idle-fix-portable-acceptance.json sha256=81FCC83A082D33EF8A9437156D3B3F9F7F9A25D2AF74DACC6805F201DB7F02F7
+#+NOTE: Source/default and relocated portable launches pass. GUI redraw requests and backend steady CPU/private memory are measured separately, without presenting a window.

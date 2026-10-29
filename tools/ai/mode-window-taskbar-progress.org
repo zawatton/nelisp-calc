@@ -2,14 +2,27 @@
 
 * S1 Mode-aware native layout
 ** S1.1 Standard starts compact and each mode selects a usable size
-evidence: build.el sha256=07E20056D0E1757A23F0BCB1A03CB47877382037B8E7B64734D138E59DFF5A79
-evidence: navigation.el sha256=CF9BBDC8A605EC6E3796A806C982C663555F8475FEDBCBF8214597A3ADE2BA86
-evidence: src/nelisp-calc-gui.el sha256=8ADB09A1954ABFE4F321F7E129ACDA00E44DAC54F8CBCF847D315FB719072B1A
+evidence: build.el sha256=5B4321A02ED99EA42F62D690E086E511956811891137399AF6D73B9C87257D8A
+evidence: navigation.el sha256=BE9B486AFE8171CB0D3A2882A0514C05A69DF980FB6D640CE29C364D9AF7B552
+evidence: src/nelisp-calc-gui.el sha256=985F878CC5A0B28108A0D9DA6C4E4B6D813D64BE4AF5EA5D53C37D40B64AD500
+#+NOTE: Standard entry preview changes numeric display selection only. Native navigation4 and panel8 retain layout/routing; final CE handling has dedicated native/portable checks.
+evidence: target/immediate-navigation.log sha256=7DE8005115B448E80F8DBF3AD093EDF5F4C579C702A96AD6371294989DC542B7
+#+NOTE: Ordered batching and adaptive active polling retain layout and taskbar routing. Integrated native navigation4 and panel rendering8 passed.
+evidence: target/responsiveness-navigation.log sha256=A4D0F9A4ABCB389960F1AB623F2B62280B0E0AF127978BDF6FCA5306729CE454
+#+NOTE: Submenu card styling preserves mode-window logic. Current native Standard geometry is 381 x 594; both themes and navigation/backend cases passed.
+evidence: target/submenu-native-bf43886ee294418c9cc1a7b23da842de/receipt.json sha256=613B96D7BB3FA170D76F2EF3963F4A8BCA3878738CE0B90A53464224BFD088A3
+#+NOTE: The new native header intentionally changes Standard height to 593. Both themes were rendered at Standard 381 x 593 and Scientific 400 x 719. Earlier geometry receipts below remain historical.
+evidence: target/modern-header-native-c6cd1a99f0944df78d8da53d6bafcb69/receipt.json sha256=2A9B1C8C272B15AE06388F74A949DA47D110524719DD35306FEEC5FA55D69549
+#+NOTE: Canvas tooltip suppression and borrowed-pointer ownership changed; layout code is unchanged. Native math/error feedback and a state-preserving live restart passed.
+#+NOTE: Idle redraw invalidation changed; layout code is unchanged. Hidden scientific transitions and multi-mode arithmetic/graph integration passed on the repaired source.
 evidence: target/mode-window-control-proof.json sha256=43EE6DEF3D26E3D80C39710883DCBA7FBFBEA37E86E7DF1831E457640A31CE6E
 ** S1.2 Hidden native transitions and controls preserve calculations and focus without stale minimum sizes
 evidence: target/mode-taskbar-navigation.log sha256=DC5409CBC4B9B7A85A670D466904B900B3FA79E43AFD3F60B9E68F9FDAB2A529
 evidence: target/mode-taskbar-graph-gestures.log sha256=3CC49CFD95085D6CA26DF2A0175C4BFE9F6E86970AA6097A32829629D7216B88
 ** S1.3 End-to-end native mode switching calculates correctly while resizing in both themes
+evidence: target/submenu-navigation.log sha256=185513895BB01CF2F7F353A49CC4A2854789F7DB442773ABB46386115E194538
+evidence: target/header-navigation-final.log sha256=EA678A3A4643EC57BC6BE232DE9E3762A706E5C47F3DD0E03E1C6B1110FDBCCF
+evidence: target/parity-mode-layout.log sha256=A3CFC3F237F2BF3577660487AB5B75DD707FDB8CF59B67A8E93F53F34D838DB0
 evidence: target/mode-window-main-positive.log sha256=11A14FF0A267D00C1B3FA87B8835D22EC92F53D733AA413BFFBFF71694CF8522
 
 * S2 Taskbar mode launch

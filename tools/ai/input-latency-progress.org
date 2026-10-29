@@ -1,0 +1,20 @@
+#+TITLE: Identify calculator input and computation latency
+
+* S1 Measurement
+** S1.1 Identify input queue and polling boundaries in current source
+evidence: docs/input-latency.org sha256=262280ED4320D95A8F62E2AB31AAA94D1A7C07CA71AF08809227D45E4DD9468C
+** S1.2 Measure warm digit/operator/result round trips independently
+evidence: target/input-latency-evidence/latency-summary.json sha256=C73E9D11D8B317031CA6585CB5336634A8657DEE97F3FAF8645B9DE57F6274F6
+** S1.3 Measure native enqueue-to-response and offscreen draw stages end to end
+#+NOTE: Clarified the endpoint to GUI response consumption and explicit offscreen drawing; compositor presentation is outside scope. The denominator remains six.
+evidence: target/input-latency-evidence/latency-sequential-e155d6732d4d4f57b195683c137086f7/result.json sha256=534C2677D8CDB564088D9EC3CF2428CDA7D74D92C24576F1956015F65920EF19
+evidence: target/input-latency-evidence/latency-burst-fb354710311a433fa3a15a843e4b5f2c/result.json sha256=3A27AFFDFD8BB5CCE23853D89AF856AC622FBA1F0217CA45CEDAAFBC3A450173
+
+* S2 Diagnosis
+** S2.1 Separate actual computation from transport and queue waits
+evidence: target/input-latency-evidence/latency-summary.json sha256=C73E9D11D8B317031CA6585CB5336634A8657DEE97F3FAF8645B9DE57F6274F6
+** S2.2 Verify current runtime identity and preserve production sources
+evidence: target/input-latency-preservation.json sha256=D488FB2E652EA6F7D4514107CD54C0654D2E5F93F79B157172823272EF2F9F13
+** S2.3 Produce evidence-backed diagnosis with explicit limits
+evidence: docs/input-latency.org sha256=262280ED4320D95A8F62E2AB31AAA94D1A7C07CA71AF08809227D45E4DD9468C
+evidence: target/input-latency-evidence/latency-summary.json sha256=C73E9D11D8B317031CA6585CB5336634A8657DEE97F3FAF8645B9DE57F6274F6

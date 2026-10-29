@@ -1,0 +1,142 @@
+#+TITLE: Windows Calculator real-unit catalog parity
+
+* Authority and scope
+- Primary source: https://raw.githubusercontent.com/microsoft/calculator/79e1ac53bba690cdf930e5dcd6ed9dbc4cbfb128/src/Calculator.ViewModels/DataLoaders/UnitConverterDataLoader.cs
+- Pinned tree: 79e1ac53bba690cdf930e5dcd6ed9dbc4cbfb128.
+- Source SHA256: 204878cefd55a363eef705ec2d30e4db6c0d7334ba485c9b3d9c03bf8a3f8bc7.
+- The source declares 158 AddUnit entries across twelve categories. Exclude
+  the 26 entries explicitly flagged =false, false, true= (informal comparisons:
+  hand/paper/field/castle; floppy/CD/DVD; battery/banana/cake; paperclip/hand/jet;
+  bulb/horse/train; turtle/horse/jet; cup/bathtub/pool; snowflake/ball/elephant/whale).
+- All 132 real entries are represented. There are 134 selectable entries because
+  the existing =gal= US alias and =turn= angle remain available.
+
+| Category | Source real | Local entries |
+|----------+-------------+---------------|
+| Length | 12 | 12 |
+| Volume | 20 | 21 |
+| Area | 11 | 11 |
+| Mass / Weight | 14 | 14 |
+| Temperature | 3 | 3 |
+| Energy | 8 | 8 |
+| Speed | 7 | 7 |
+| Time | 8 | 8 |
+| Power | 5 | 5 |
+| Data | 35 | 35 |
+| Pressure | 6 | 6 |
+| Angle | 3 | 4 |
+
+* Compatibility and numerical choices
+The first three catalog fields retain their contract: ID, Calc factor expression,
+and Calc offset expression. An optional fourth field is a native display label.
+Existing IDs, factors, and offsets are unchanged. =gal= remains US gallons;
+=kb= remains decimal kilobytes. Explicit US/UK labels distinguish regional
+volume and ton units; SI and IEC data labels distinguish bits and bytes.
+Pyeong uses the source's exact =400/121= factor and is available in every locale,
+including Japanese users, without hiding other regional choices.
+
+New factors follow the pinned source, including its rounded US cup, UK teaspoon,
+electron-volt, knot (0.5144 m/s), and Mach (340.3 m/s) conventions. Existing
+=mph= retains the exact international 0.44704 m/s factor rather than adopting
+the source's rounded 0.447. Existing pressure and radian factors also remain.
+No claim of standards correction is made for those source conventions.
+
+Conversions execute through genuine GNU Calc expressions. Added SI/IEC data
+factors use exact decimal integer literals for the powers of two/ten, avoiding
+repeated exponentiation in the standalone runtime. They are catalog facts;
+conversion arithmetic still runs exclusively in GNU Calc. Radian conversion
+materializes =pi= with GNU Calc's =math-pi= at the selected precision; otherwise
+the existing backend leaves =pi= symbolic and rejects the numeric result.
+No host math evaluator is introduced.
+
+* Verification interfaces
+- =tools/unit-catalog-probe.ps1 -Mode Host=: stock Emacs genuine Calc reference.
+- =tools/unit-catalog-probe.ps1 -Mode Standalone=: genuine NeLisp + GNU Calc.
+- =-Sharded= partitions the unchanged exhaustive 308 assertions into a global
+  group (40 assertions) and category batches containing at most eight units
+  (at most sixteen identity/inverse assertions). The 21 category batches plus
+  the global group start 22 fresh processes sequentially, each limited to 90
+  seconds. This bounds each runtime lifetime instead of raising the timeout.
+  Run =-Mode Host -Sharded= first: its ordinary exhaustive reference produces
+  308 stable, distinct assertion IDs. Both sharded runs must match that exact
+  ID set, without duplicates or missing IDs; repeated completion sentinels
+  never increase the aggregate coverage count. No parallel workers are used.
+  =target/unit-catalog/batched-Host/= and =batched-Standalone/= contain per-group
+  assertion TSV receipts and =coverage.json= (counts, timings, IDs, status).
+  A failed group stops the run and records its name and error in the JSON.
+- =-TracePath PATH= optionally records stable assertion IDs in TSV form;
+  =-Shard CATEGORY -Offset N -Limit 8= runs one category batch, while
+  =-Shard global= runs global checks. Omitting offset/limit retains the earlier
+  whole-category diagnostic path. Ordinary default/full/focused/single modes
+  retain their original assertions and inputs.
+- =-Focused= retains every independent known conversion, one identity/inverse
+  pair per category, tiny/large values, largest SI/IEC data identities, and
+  invalid-unit checks. The stock reference retains exhaustive all-unit checks.
+- =-Single= checks YiB to bytes, the inverse, and Gibit to bits within a hard
+  30-second owned-process limit. Exact data literals completed this fresh
+  standalone check in 18,355 ms. Earlier exhaustive exponent-factor versions
+  exceeded 120 seconds and a subsequent longer run was stopped; that incomplete
+  run is not a passing result or a directly comparable single-case benchmark.
+- =-CatalogRoot PATH= runs the same test against a preserved baseline catalog.
+  Its first assertion requires UK gallon; the old snapshot fails that assertion.
+- The suite independently checks known volume/mass/data/angle/temperature values,
+  source-specific factors, very large/small numbers, every unit's identity and
+  inverse, and invalid categories or cross-category/unknown units. Relative
+  comparison prevents a zero result from passing the tiny-value test.
+- =tools/unit-catalog-native-probe.ps1=: owned hidden GTK sessions select all
+  twelve categories, enumerate actual From/To widget items (268 receipts),
+  verify unique IDs and labels and natural widths <=400, and calculate UK
+  gallons, long tons, MiB/KiB, and gradians through actual combo selections.
+  =ui:unit:snapshot= suppresses callbacks, enumerates widget text/IDs, and
+  restores the previous selections. It submits no calculation command.
+- Logs and native receipts live under =target/unit-catalog/= and
+  =target/sessions/=; the scripts never use the clipboard or present windows.
+
+* Observed results
+- Stock Emacs exhaustive: =UNIT-CATALOG-PASS:308 categories=12 units=134=.
+- Stock Emacs sharded: =UNIT-CATALOG-SHARDED-PASS:308 unique=308 processes=13=;
+  the ID union exactly matches the ordinary exhaustive reference. Duplicate
+  reference-ID and invalid-shard negative controls were both rejected.
+- Stock Emacs eight-unit batches: 22 fresh processes passed the exact same
+  308 distinct assertion-ID union as the ordinary exhaustive reference.
+- Genuine NeLisp eight-unit batches: =UNIT-CATALOG-SHARDED-PASS:308 unique=308
+  processes=22 maxUnits=8=. Every original assertion passed with unchanged
+  inputs. This is bounded fresh-process coverage, not a sequential single-runtime
+  308-assertion pass. The old whole-category failure remains recorded below.
+- Genuine NeLisp focused: =UNIT-CATALOG-PASS:64 categories=12 units=134=.
+- Genuine NeLisp largest-data 30-second probe: four checks, 18,355 ms.
+- Native GTK: =UNIT-CATALOG-NATIVE-PASS:268=, maximum measured natural combo
+  width 140 pixels; all four new conversion workflows passed.
+- Preserved old catalog: expected failure =missing UK gallon=; original
+  catalog triples also passed a literal-preservation comparison.
+- The exhaustive 308-check suite has not been completed in standalone NeLisp.
+- The earlier whole-category fresh-process NeLisp run remains red: global,
+  length, volume, area, mass, temperature, energy, speed, time, and power groups
+  completed (218 distinct assertions). The data group hit its unchanged
+  90-second limit after 54 of 70 assertion receipts, last completed
+  =inverse/data/eibit=. Its owned process was killed; pressure and angle were
+  not started. Partial data receipts do not count as a completed group or a
+  308-assertion success. This historical failure is retained unchanged in
+  =sharded-Standalone/coverage.json= and =data.tsv=; new eight-unit batch results
+  use the separate =batched-Standalone/= directory.
+- Fresh-process validation bounds accumulated allocation but does not fix
+  runtime allocation/GC or idle-sleep defects. Those remain outside this harness.
+- Optional process sidecars (=*.log.metrics.json=) record sampled peak private
+  memory in bytes, elapsed time, and the unchanged timeout. Sampling was enabled
+  for the final pressure/angle children; earlier children have no retained peak
+  counter and must not be assigned an invented value. Source/runtime hashes and
+  the canonical assertion-ID-list hash are saved in the batch artifact manifest.
+
+* Investigation limits
+The reported batch execution used this isolated unit-catalog overlay and its
+recorded engine/runtime hashes. The coordinator's integrated scientific changes
+(including engine AST pi/grad handling and programmer modulo dispatch) are not
+part of that execution provenance. Root integration checks must assess that
+combined overlay; these receipts alone do not establish its full parity.
+
+The current connection exposes no code-context/dependency tool. Focused source
+caller searches covered the catalog, conversion function, token dispatcher, and
+native catalog reader/generator; they do not prove semantic caller completeness.
+Full Windows Calculator application parity, localized resource translations,
+whimsical comparisons, and changing the pinned source's rounded conventions are
+outside this catalog task.

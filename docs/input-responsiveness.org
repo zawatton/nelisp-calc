@@ -1,0 +1,83 @@
+#+TITLE: Input transport responsiveness
+
+* Contract
+The frontend submits an idle callback's token immediately. While a batch is
+outstanding, the existing 64-slot FIFO retains new tokens. On acknowledgement,
+one append drains at most sixteen tokens in order. Offset 40 is an outstanding
+count, not a boolean. A monotonic partial publication advances the display and
+subtracts its acknowledged delta, preserving =acknowledged + outstanding=.
+An older publication cannot replace a partial result or release the queued tail.
+Only the final acknowledgement allows the next batch to be appended.
+
+The normal GUI uses one GLib one-shot source: 100 ms when idle and 10 ms while
+requests are outstanding. An input callback replaces an idle source once; rapid
+callbacks do not postpone an already active source. Legacy Commands/Keys fixture
+drivers retain their 100 ms cadence. Context offsets 8744/8752 hold the source ID
+and scheduled interval; 8760 is a fail-stop transport latch. All fit the existing
+9216-byte allocation. Startup and request-open deadlines use monotonic elapsed
+time (90 seconds), independently of the poll interval.
+
+An open failure retains the unsent queue and may retry. A stream error or failed
+buffered close has an ambiguous append outcome: latch failure, stop submission
+and response acceptance, retain the unavailable status, and return to the idle
+poll cadence. Restart the session after resolving such a disk-write failure.
+Replaying a possibly written token would risk duplicate calculations.
+
+* Focused validation
+=tools/input-responsiveness-probe.ps1= evaluates the actual selected DSL function
+bodies under deterministic foreign-function and memory stubs. Twelve cases cover
+immediate submission, ordered bounded batches, partial/stale publications, final
+acknowledgement and tail release, FIFO overflow, open retry without duplication,
+the real wait deadline, one adaptive source, stream failure, close failure,
+external acknowledgement jumps, initial zero-count readiness, and idle same-count
+feedback. External jumps clamp outstanding to zero before subtracting, avoiding
+unsigned underflow when a diagnostic client appends requests directly.
+The unchanged GUI source fails the immediate-submit assertion (negative control).
+These fixtures exercise transport bookkeeping; they are not a substitute for
+native GTK integration. Existing navigation and Enter probes retain four cases
+each. The initial transport implementation passed both native probes, and the
+final source compiles through the same native AOT path.
+
+Caller analysis used a bounded search of the GUI and enclosing control generators.
+The live Anvil connection did not expose context/dependency/index operations;
+no service was restarted. Generated DSL symbols are not top-level Elisp APIs.
+
+* Timing method
+Private diagnostics under =target/= build both unchanged and modified GUI sources
+with identical timestamp instrumentation and the same BAF76 runtime and original
+calculation engine. A separate 100 ms GLib driver emits native GTK key signals;
+the normal response poll runs independently with production automation pointers
+zero. Sequential and burst runs each submit nineteen tokens, including four
+equals operations, and require the final result 1035 and count 19.
+
+Every submitted token receives send/flush/consume timestamps, including partial
+acknowledgements and all members of a batch. The timed mailbox records token
+start/end, computation duration, and publication. The offscreen drawing trace
+uses the real drawing callback and does not measure screen presentation. Timing
+summaries check nonnegative stage order and closure of each token's stage sum.
+
+The final-source paired run (original engine) produced these medians in ms.
+Each case has twelve digit samples and four equals samples; tracing overhead,
+backend sleep phase, and scheduling variation are included. These are bounded
+diagnostic runs, not screen-presentation or steady-state throughput claims.
+
+| Case       | Token  | Before queue | After queue | Before total | After total |
+|------------+--------+--------------+-------------+--------------+-------------|
+| Sequential | Digit  |       98.315 |       0.630 |      323.615 |     180.452 |
+| Sequential | Equals |       98.047 |       0.756 |      648.625 |     475.994 |
+| Burst      | Digit  |      710.335 |      68.550 |      974.315 |     524.562 |
+| Burst      | Equals |     1844.814 |     107.589 |     2387.238 |    1330.099 |
+
+Both final cases returned 1035/count 19. All 38 final token traces had zero
+negative stages and zero stage-sum closure error. Final after sessions are
+=target/latency-sequential-5e3037f9e0ac47998c3d27c425cb36ed= and
+=target/latency-burst-4c3c88c4348b4e5d9a5e1b1f6e5aa31d=. The normal GUI source
+SHA256 is =EE9859EC4712C5C27D322C20C9298899B5C254D9D19784F3B40F3235B14F8DE5=.
+The instrumented final GUI is =target/input-after-clamped.exe=. Idle CPU and
+the integrated engine candidate are verified separately by the coordinator.
+
+An intermediate implementation withheld every partial batch publication. It
+reduced queue time but increased visible digit latency behind equals operations;
+that design was rejected. The final implementation displays partial results
+without releasing the batch early. Backend sleep, engine computation, core
+runtime, geometry, and styles are unchanged by this transport lane.

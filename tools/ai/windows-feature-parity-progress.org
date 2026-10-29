@@ -1,0 +1,55 @@
+#+TITLE: Expand Windows Calculator feature compatibility
+
+* S1 Conversion catalog
+** S1.1 Record an official-source catalog comparison and add missing unit definitions with unambiguous identifiers
+evidence: docs/unit-catalog-parity.org sha256=15DD94C106C43313E712FBF0FF54DD872E4FABB5F23CC05FCE05848EE372DF3C
+evidence: lisp/nelisp-calc-modes.el sha256=11950EA8A0C9105A9A500A10567126549EB296DA1533647E0733BA2AD1953921
+** S1.2 Genuine standalone Calc verifies independent factor, offset and cross-category error cases for the expanded catalog
+#+NOTE: Exact 308-ID coverage passed in 22 fresh bounded batches. The older 300s monolithic and 90s whole-data timeouts remain retained diagnostics; root integration independently passed 64 focused checks.
+evidence: target/parity-unit-evidence/batched-Standalone/manifest.json sha256=AAB778EB2D872B6B6EE757E9D61B5DA209CB8D507AD0B4D218D5437D6B78DB78
+evidence: target/parity-unit-evidence/batched-Host/coverage.json sha256=D7985875BA70181197774FEF32062B0E9239DA8EEC4C0FB01A80C8833CF32967
+evidence: target/parity-acceptance-review.json sha256=66A09DC2BAA29B4291BB114A4BAAB462D45C903155298B9E581793066FEBB3BC
+evidence: target/parity-units-host.log sha256=991C54B1EE957C3515DD974F3C623FA008A27236ED251B4D222CF3231727EF1B
+evidence: target/parity-units-focused.log sha256=E1AEE7D7F963FF0C980C3EC88D08C40C5A8C54ADA2C42F512CF7218321D56BC5
+evidence: target/parity-units-old-control-proof.json sha256=4AAE5D66FF00E8CEA1E5C2E897EC74B7F5342F68DB5DAF1BFB5452889EDF05EB
+** S1.3 End-to-end native selectors expose and convert newly added units without command syntax
+evidence: target/parity-units-native.log sha256=468F6BF578AC76D710CB049C138F5A9B18D7BE39F8096364CF9CA344643EA32D
+evidence: target/parity-portable-acceptance.json sha256=7FD2593F9F89A33541978FCA922E9743055EA406B5E30EB34B15BA055DCA0B12
+
+* S2 Scientific and programmer shortcuts
+** S2.1 Document official mappings and implement missing angle, constant, inverse-function and programmer shortcuts with visible backend support
+evidence: docs/shortcut-parity.org sha256=9519CFDF77F9805EABB7508044940DEF3F5015D31F07FD1ADFCD58B2354C5FDB
+evidence: keyboard.el sha256=762068C988CD92DA0D8C325967D1CA91525F527AE20648679C78C50A9E3D4908
+evidence: lisp/nelisp-calc-engine.el sha256=24D7F2B47486F05376D1333A70C67C2B0FD3ABFA7E6B8C826C56246FCF7C5016
+#+NOTE: Strict decimal binary operations use the genuine GNU numeric reader and shared evaluator; customization/fallback, precision, errors and history are covered by223 checks.
+evidence: target/immediate-direct-native.log sha256=4ED77214F06DE554BC21368D6C1F7F7F8D50CAD57F17DBCF14AC917A555A31BA
+#+NOTE: Binary expression grouping is reduced only for unsigned decimal literals. Genuine Calc Standard, ScientificPrecision, angle, precision, history and grouping boundary checks passed; evaluator and shortcut dispatch are retained.
+evidence: target/responsiveness-computation-evidence/paired.log sha256=6D5024538EA85B59300A5F076A12542D216C2FEFAAD6E681C768767B9D85B709
+#+NOTE: The new owned-startup GC wrapper leaves the existing evaluator and mode functions unchanged; native integration11 and hidden multi-mode interaction passed with the gated policy.
+evidence: scientific-controls.el sha256=BDA27DA110C0D55DEC0E815B9FBF7FFF848DB3BF460C843306DCFABA7D365799
+** S2.2 Positive and negative native key tests retain editable/navigation focus and submit exactly one requested action
+evidence: target/parity-shortcuts-native.log sha256=20C4AD716D1A242F58FA85A892009C66F2707B1383B264722FD1BBF0A6DBEDB1
+evidence: target/parity-science-selector.log sha256=581B3002E0F14BC9B79E6407F0104ADF03740DFD7FC8A7E28D8522DB19BAF648
+evidence: target/parity-enter-regression.log sha256=477A10220265BDBEF1545803A4E51EFCC3A47D85900A1770F1276CBBBDDC6AAC
+evidence: target/parity-old-controls-review.json sha256=22E81144A42ABC5CA87CAFFC836665E06C2392B8EED953EC21F9E0383CFBDD91
+** S2.3 End-to-end native shortcuts compute new scientific and programmer results through genuine standalone Calc
+evidence: target/parity-scientific-host.log sha256=42A79FF9D5AC25988E6971A9079ED1492E33C0C6E11B5E228B48CE899422466F
+evidence: target/parity-scientific-standalone.log sha256=6C7242522BB1A0972D8390B62E495EB96BB0DA22A5238F9DC1E13052C7443847
+evidence: target/parity-integration-Standalone.log sha256=456C35EE3C4E4A7CF7514F406443A61B8C6F08E7543D976799E3E16435E46ED3
+evidence: target/parity-portable-acceptance.json sha256=7FD2593F9F89A33541978FCA922E9743055EA406B5E30EB34B15BA055DCA0B12
+
+* S3 Implicit graph equations
+** S3.1 Genuine Calc evaluates validated two-variable equation residuals with bounded resource use and visible errors
+evidence: lisp/nelisp-calc-implicit.el sha256=EAEBEB28C459EA1E74F63AFF5747A166D292EEA854B9D5B3579893483E712BBA
+evidence: docs/implicit-graphs.org sha256=5D794F7A71B51ED01AB5E9C6BBFEE0E9DCB59EE27E741C889B07917FE282EA2E
+evidence: target/parity-implicit-host.log sha256=0D1EF9D89276C04E777C05D22B1F1CDFCF2FCF65FC128CF77819EC0809A70F13
+evidence: target/parity-implicit-standalone.log sha256=512C78A5865244D1E84B1A1F24CAFBEF68DF8372925F0BA13D0534BF95A2DAF2
+** S3.2 Contour generation and native rendering retain disconnected segments, reject invalid expressions and preserve existing plots on failure
+evidence: graph-implicit-controls.el sha256=C2CB2BD1E21A9B91960182C4997193127044E0A60E0DBC91FC6A87EEAC3F7FE6
+evidence: target/parity-integration-Host.log sha256=E3C4BE15AF855E6C357CED0009FA6902204FEFE8CC655AB0351B7E4C871D154B
+evidence: target/parity-integration-Standalone.log sha256=456C35EE3C4E4A7CF7514F406443A61B8C6F08E7543D976799E3E16435E46ED3
+evidence: target/parity-graph-regression.log sha256=49131A4AEEF6639D748415B366F3FBA33CB61D38E0E1FE7EEA1C5556C3195B88
+evidence: target/parity-graph-marker-verifier.json sha256=83F836AB05E36AE81105C184237BA153E4138531286D32426BB63B707E6E337A
+** S3.3 End-to-end native graph entry plots a circle and a non-circular implicit equation and retains explicit graph and navigation behavior
+evidence: target/parity-implicit-native.log sha256=2079076C960EA7251C8BC9015418C6F9B65BF6B79599503045F2695E5A6425C8
+evidence: target/parity-portable-acceptance.json sha256=7FD2593F9F89A33541978FCA922E9743055EA406B5E30EB34B15BA055DCA0B12

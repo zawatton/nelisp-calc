@@ -1,0 +1,27 @@
+#+TITLE: Reduce calculator memory footprint
+
+* S1 Attribution and bounded implementation
+** S1.1 Compare fresh startup, calculations and GC using the same immutable runtime
+evidence: target/memory-footprint-evidence/memory-footprint-investigation.json sha256=B0DB88BA1EDB97F15944EB16DA2F68A376D426A3439CB73175970E52C40DF4C6
+#+NOTE: Attribution only; its pass=false accurately records that the earlier application-level alternatives did not reach the reduction target.
+** S1.2 Preserve genuine Calc first-use behavior while reducing unnecessary startup work
+evidence: target/memory-footprint-evidence/native-gc-policy-host.log sha256=38FEDD78A9B3581DDCF2AB1BAD3FA10B92ED584F607DBE30465CCE5A0455AB13
+evidence: target/memory-footprint-evidence/native-gc-policy-native.log sha256=349BD269635DC608D9C74814B1DCB9F5729318244E92155B484DE3103C4AABC8
+evidence: target/memory-runtime-capability-test.log sha256=91CBBED223A02E15AA6A8371AC60FB67BA9F2C4CDC1B67DC9C692052BB61C2EB
+evidence: target/memory-footprint-evidence/memory-negative.stderr sha256=C661E1F01C5C5FCDB1390E050032FFD3DAE32AA8DF8980F2C9A8379F3B7AC4BE
+** S1.3 Matched Standard startup and history cases reduce private memory by at least10percent
+cmd: python -c 'import json; from pathlib import Path; assert json.loads(Path("target/memory-footprint-acceptance.json").read_text(encoding="utf-8-sig"))["pass"]'
+evidence: target/memory-footprint-acceptance.json sha256=F38111C1DFA0687C8D268CBC900560EEF8D585394600EEC44D6533D5EAF32A97
+
+* S2 Integration and live verification
+** S2.1 Integrate reviewed code while preserving existing work and documenting memory limits
+evidence: target/memory-footprint-preservation.json sha256=01D214EF58A0FCE7F7A5FB5A0A24B1E6C9DAB36DB0B6DBBFB370EE64705CE96F
+evidence: target/runtime-capabilities.json sha256=42A336DF1D7EFCC1B02D6430A8FC3D0D9EA691AB84B23B3C074A8610D1BECD4A
+** S2.2 Hidden first-use scientific, converter and graph calculations succeed without host fallback
+evidence: target/memory-footprint-native-acceptance.json sha256=2C6B4F98BC18218506DF3A7C282FB598BEDA9222B3A49206E8E196767E597DBD
+evidence: target/memory-footprint-portable-acceptance.json sha256=3B8619F3A4044F008AF78F5AC6A7A40A83C379599769E3F901C5C7986EA6A803
+** S2.3 Restart preserves live state without activation and retains the idle CPU limit
+cmd: python -c 'import json; from pathlib import Path; r=json.loads(Path("target/memory-footprint-live-acceptance.json").read_text(encoding="utf-8-sig")); b=json.loads(Path("target/memory-footprint-live-baseline.json").read_text(encoding="utf-8-sig")); assert r["pass"] and r["oneCorePercent"] <= 5 and r["privateMiB"] <= b["privateMiB"] * 0.9'
+evidence: target/memory-footprint-live-acceptance.json sha256=E14D7B4A34B31A4C10EF45DCD84CAB8D8B5D11105F4A7F89849A75AE1C8ABE38
+evidence: target/memory-footprint-live-baseline.json sha256=0E72BC27D683B7E0897858684A502BFB06601AFF29D0F45C721368D19CA8FF11
+#+NOTE: End-to-end live memory guard strengthened to require10percent versus the recorded original session; criterion count remains6.

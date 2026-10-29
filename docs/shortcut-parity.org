@@ -1,0 +1,75 @@
+#+TITLE: Scientific and programmer shortcut coverage
+
+* Source authority
+Microsoft Calculator commit =79e1ac53bba690cdf930e5dcd6ed9dbc4cbfb128=:
+- =src/Calculator/Resources/en-US/Resources.resw= contains actual English key values.
+- =src/Calculator/Views/CalculatorScientificOperators.xaml= specifies ordinary,
+  Shift, Control, and Control+Shift attachment properties.
+- =src/Calculator/Views/CalculatorScientificAngleButtons.xaml= supplies angle controls.
+- =src/Calculator/Views/CalculatorProgrammerOperators.xaml= supplies modulo controls.
+- =src/Calculator/Common/KeyboardShortcutManager.cs= explains modifier dispatch.
+
+Pinned raw source URL base:
+https://raw.githubusercontent.com/microsoft/calculator/79e1ac53bba690cdf930e5dcd6ed9dbc4cbfb128/
+Downloaded evidence resides in =target/windows-parity-research/=.
+
+* Implemented additions
+| Keys | Action |
+| F3 / F4 / F5 | Grad / degrees / radians |
+| P / Shift+E | pi / Euler constant |
+| Shift+S / Shift+O / Shift+T | inverse sine / cosine / tangent |
+| Ctrl+S / Ctrl+O / Ctrl+T | hyperbolic sine / cosine / tangent |
+| Ctrl+Shift+S / O / T | inverse hyperbolic sine / cosine / tangent |
+| Ctrl+G / G / B | 10^x / 2^x / cube root |
+| Y | power operator |
+| Programmer % | bounded integer remainder |
+
+The previous F3=degree/F4=radian mapping was incorrect. This change corrects
+it using the pinned resources. The existing sixteen-case native probe keeps
+its case count; its degree fixture now uses F4, and previously unsupported
+Shift+S/F5/% negatives become unsupported Alt+Shift+S/F6/Ctrl+Shift+% negatives.
+New positive cases separately cover the newly implemented mappings.
+Alt+1..5 retains this application's established custom mode mapping.
+
+All scientific numbers come from genuine GNU Calc. Pi uses radian arccos(-1),
+Euler's constant uses exp(1), and cube root preserves negative real inputs.
+GNU Calc has no native grad angle setting. =nelisp-calc-grad-expression= is a
+pure parsed-tree transformation: circular trig arguments multiply by 9/10,
+inverse circular trig results multiply by 10/9, then Calc evaluates in degrees.
+The transform handles nested expressions and is reusable by graph evaluators.
+Hyperbolic functions remain independent of the angle setting.
+
+Programmer remainder uses the existing bounded bit-vector division and product:
+=a - trunc(a/b)*b=. Signed results follow the dividend sign; division by zero
+remains an observable error. No host-width integer conversion is introduced.
+
+* Native controls and integration
+=scientific-controls.el= exports =calc-scientific-controls=. Load it alongside
+the other control generators and apply the transform after advanced controls.
+It replaces the scientific page's help label with a single combo box in row 0,
+spanning four columns and preserving the compact height. Context slot 7400
+holds the combo box. =science:select:N= changes its selection through GTK, exercising
+the actual changed signal. The selector covers every new unary action and GRAD.
+After an operation it resets to the non-executing placeholder, so selecting the
+same function again executes it again. The hidden native probe measures GTK's
+preferred size rather than unallocated hidden-window dimensions: 407 x 753,
+with a 39-pixel selector, within the 768-pixel height bound.
+
+* Validation entry points
+- =tools/shortcut-parity-probe.ps1 -Mode Host= and =-Mode Standalone=: 27 genuine
+  scientific / nested-grad / constants / signed and 64-bit remainder / zero-error checks.
+- =tools/shortcut-parity-native-probe.ps1=: five hidden native GTK sessions,
+  asserting exact backend token sequences, mode isolation, modifier rejection,
+  Caps Lock behavior, editable focus preservation, and one dispatch per key.
+- =-ControlGui PATH=: actual baseline executable returns handled=0 for new F5.
+- =-SelectorOnly=: hidden native selector changed-signal integration.
+- Existing =tools/shortcut-probe.ps1= retains sixteen cases; existing
+  =tools/calculation-enter-probe.ps1= retains four focus/Return cases.
+
+* Remaining scope
+This is not full Windows Calculator keyboard parity. Remaining source-table
+functions include reciprocal trigonometry, inverse reciprocal trigonometry,
+arbitrary-base logarithms, y-th root, DMS, display format cycling, random,
+and exponent-entry editing. Shift+A..F programmer aliases and exact official
+programmer word-size function keys remain separate parity work. Existing
+programmer word-size mappings are preserved by this scientific addition.

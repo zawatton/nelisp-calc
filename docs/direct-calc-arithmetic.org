@@ -1,0 +1,134 @@
+#+TITLE: Direct genuine GNU Calc arithmetic
+
+* S1 Numeric reader and integration
+** S1.1 Confirm pinned genuine numeric reader equivalence
+evidence: target/direct-checked.log sha256=8927e757b30e3a26c0b80e25cd12f556c85bb4adc9fae1a1038a7c9a5e5a4ea5
+** S1.2 Verify strict direct-path negative control and numerical matrix
+evidence: target/direct-checked.log sha256=8927e757b30e3a26c0b80e25cd12f556c85bb4adc9fae1a1038a7c9a5e5a4ea5
+evidence: target/direct-negative-final.log sha256=1270e5fb5e2c71e2f1c2fbc45aa0aec0d0fd221cbef2447fd5f3323bc5699d93
+** S1.3 Run unchanged Standard, Scientific precision and provider gates
+evidence: target/direct-engine-standard-final.log sha256=76b5aec9f79841a5af952e5bca9650381ec39ee7c5ae140f06ffcf29c4a31625
+evidence: target/direct-engine-scientific.log sha256=ef9802a28c91ddd7dcbb57faad4a8c7d981c591678db9afc465f0edd1c07247f
+evidence: target/direct-scientific-precision.log sha256=7c38b6be9895eed868f3cb4288f1b00a4e0af7d6f310909cc74f4d5377e87bc5
+evidence: target/direct-compat-isqrt-provider.log sha256=03c010388758284c21ee4e4d9c59b857496e37dd1a2b163f1bcb3a1891f89cf4
+** S1.4 Measure paired warm binary and token requests with repeated equals
+evidence: target/direct-final.log sha256=b17cb75c7d9f7daa8ab6db61cdd190c7cdbfd1fbe3787a2239b4db9eb16b035f
+
+* Contract and genuine provider
+The pinned GNU =calc.el= defines public =math-read-number (s &optional decimal)=
+at line 3247. GNU =calc-aent.el= uses that reader for numeric factors, at line
+1095. It returns precision-normalized GNU numbers. The alternative
+=math-read-number-simple= explicitly preserves every digit, so it is not the
+reader selected for this path. A BAF runtime probe confirmed literal-node
+equivalence at precision 2, 12 and 30, including exact integers beyond both
+2^53 and int64, decimal zero, leading zeros and rounded decimal mantissas.
+
+Only two unsigned ASCII integers or decimals with digits on both sides of a
+decimal point, and an operator from +, -, *, /, use direct numeric reading.
+The adapter constructs the genuine GNU operator node, then uses the existing
+shared =calc-normalize=, extension retry, =math-constp= and
+=math-format-value= path. Result structures, errors, display/status updates,
+session recording and precision bindings stay in the shared evaluator.
+No host floating point, host decimal conversion, replacement arithmetic,
+result caching, core/vendor changes or runtime policy changes are introduced.
+
+Signs, negative zero, fractions, exponents, trailing dots, compound expressions,
+other operations and unsupported/customized input settings retain the text
+parser. Language, radix, filters and user token/parse tables are checked live.
+GNU replacement/superscript/subscript settings are approved only when their
+source characters cannot affect the accepted ASCII syntax. A deep snapshot,
+including copied strings, allows native =equal= to detect in-place changes
+without rescanning 70 GNU replacement entries for every operation. The probe
+tests both string mutation and existing-cons mutation with restoration.
+GNU's own preprocessing cache is refreshed in those tests because it caches
+by list identity and otherwise does not recognize such in-place edits.
+
+The contract assumes the pinned genuine provider function definitions remain
+unmodified. Arbitrary =fset=/advice replacements of GNU parser/preprocessor
+functions are outside this adapter's supported customization surface. The
+probe temporarily wraps preprocessing solely to count calls. Its direct-path
+assertion requires zero calls; fallback cases require one.
+
+* Warm measurements
+Runtime SHA256:
+=BAF76F0BD7F57C3786D71B1D61F7404C4A7A815E7FB22B668A64D99389CE991B=.
+Archived adapter SHA256:
+=427515A7ED4CA23F88A003860C781FDEDCB7D05ADFDF9C56196A06D7A4F5C4B8=.
+Candidate adapter SHA256:
+=24D7F2B47486F05376D1333A70C67C2B0FD3ABFA7E6B8C826C56246FCF7C5016=.
+
+The =tools/direct-calc-probe.el= probe accepts =DIRECT_CALC_BASELINE= for an
+archived adapter and =DIRECT_CALC_ENGINE= for the candidate or negative
+control. Defaults are relative to the project. Invoke the explicit verified
+application-local runtime with =--load tools/direct-calc-probe.el=,
+=NELISP_CALC_NATIVE_GC_POLICY=debt-v1=, and a fresh isolated
+=NELISP_CALC_TARGET=. Initialization uses the owned production policy and
+restores normal GC before readiness and all measurements.
+
+The recorded =target/direct-final.log= contains four warm same-process paired
+rounds. Both functions use the same genuine provider and shared evaluation
+implementation; the archived binary function enters generic text parsing.
+Timings are wall milliseconds inside the initialized runtime, exclude
+startup, and retain normal application GC. The counter wrapper performs no
+instrumentation file I/O. Binary timing includes validation, numeric reading,
+GNU normalization, formatting and display updates. Token timing additionally
+includes the unchanged history/session publication, including its real I/O.
+
+| Request | Archived median (range) ms | Candidate median (range) ms |
+|---------+----------------------------+-----------------------------|
+| 123 + 456 | 154.33 (137.30-169.48) | 6.05 (5.03-8.48) |
+| 0.1 + 0.2 | 143.41 (136.60-195.91) | 8.56 (8.10-13.46) |
+| 12.5 * 4 | 169.98 (119.49-235.83) | 9.55 (7.33-11.99) |
+| 1 / 8 | 67.75 (61.16-74.91) | 6.01 (5.79-7.01) |
+| First equals, full token | 184.70 (179.49-227.79) | 40.44 (38.33-44.75) |
+| Repeated equals, full token | 227.38 (182.43-294.27) | 46.31 (38.22-61.09) |
+
+Digits and the first operator need no GNU calculation: token processing was
+0-1.1 ms in these warmed sequences. This does not measure GUI round-trip or
+render latency. The uncached customization scan initially left binary median
+cost near 60-70 ms; retaining its safety contract with a mutation-safe settings
+snapshot removed that repeated interpreted scan.
+
+First readiness was measured separately at 18,001.760 ms from script entry to
+owned initialization complete, including loading both archived and candidate
+adapter sources. This is not a native application startup measurement. The
+first cache validation is paid once before warm timing, and no claim of a
+sub-10-ms cold first arithmetic request is made. Another initial readiness
+sample was 16,710.924 ms. Startup remains material and is outside this change.
+
+* Verification and limits
+The matrix compares complete result values and display/status/expression/fresh
+state against the archived path for 20 cases at precision 2, 12 and 30.
+Independent exact expectations are additionally checked at precisions 12 and
+30; precision 2 correctly rounds some decimal inputs/results differently.
+The same genuine precision behavior is required on both paths. Cases include
+large exact integers, decimals, zero and negative zero, divide-by-zero, malformed
+input, rational/scientific/compound/trailing-dot fallback. Further checks cover
+custom input preprocessing, all three angle modes, precision-20 square root,
+engine unavailable, repeated equals and exactly matching history entries.
+The final focused probe exits 0 with =DIRECT-CALC-PASS 223 checks= in
+=target/direct-checked.log=. The exact final probe with archived engine exits
+1 after =SEMANTICS-PASS 185=, at the intended assertion
+==(= direct-preprocess-count 0)== in =target/direct-negative-final.log=.
+Thus the old engine retains correct arithmetic/customization semantics but
+fails the direct-path contract. The earlier timing run's 220 checks preceded
+the three additional restored-cons mutation assertions; adapter source was
+identical in both runs. The final probe SHA256 is
+=D4396AF33960769E38C9B7402CBEAEE2D430F2836016CC57A0FAC413822153D4=.
+
+Unchanged test sources are run directly with the explicit BAF runtime because
+=tools/engine-probe.ps1= hardcodes an unrelated shared executable. The Standard,
+Scientific, ScientificPrecision and genuine isqrt provider sources retain all
+their assertions and PASS markers. No vendor, runtime, GUI, mailbox, session
+or shared-service files are changed. Only this document, the focused probe and
+the adapter are delivered.
+
+The current connection exposes no code-context/dependency/index APIs. Scoped
+syntactic searches covered adapter callers in =lisp/= and =test/= and the
+pinned GNU reader definitions/call site; this is not proof of semantic caller
+completeness. No shared server or foreground UI was enabled for investigation.
+
+The narrow probe is also the development-efficiency improvement: its
+=DIRECT_CALC_ENGINE= override makes archived-engine negative control possible
+without rebuilding or selecting the shared runtime. Large error diagnostics
+and measurement rows remain local artifacts under =target/=.

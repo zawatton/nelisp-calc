@@ -1,0 +1,71 @@
+#+TITLE: Windows Calculator feature compatibility expansion
+#+DATE: 2026-10-29
+
+* Reference revision
+
+The compatibility comparison uses Microsoft Calculator revision
+=79e1ac53bba690cdf930e5dcd6ed9dbc4cbfb128=. The source revision is recorded
+instead of treating historical shortcut tables as the current specification.
+
+- [[https://github.com/microsoft/calculator/blob/79e1ac53bba690cdf930e5dcd6ed9dbc4cbfb128/src/Calculator.ViewModels/DataLoaders/UnitConverterDataLoader.cs][Unit catalog and regional variants]]
+- [[https://github.com/microsoft/calculator/blob/79e1ac53bba690cdf930e5dcd6ed9dbc4cbfb128/docs/ManualTests.md][Microsoft manual acceptance scenarios]]
+- [[https://github.com/microsoft/calculator/blob/79e1ac53bba690cdf930e5dcd6ed9dbc4cbfb128/src/Calculator/Common/KeyboardShortcutManager.cs][Keyboard chord routing]]
+
+* Scope
+
+The objective ledger is =tools/ai/windows-feature-parity-progress.org=.
+Its three stages cover the real conversion catalog, additional scientific
+and programmer shortcuts, and bounded implicit equation plotting.
+Each stage ends in a native GUI calculation through standalone GNU Calc.
+
+Conversion identifiers distinguish US and Imperial measures, decimal and
+binary data prefixes, and the original compatibility aliases. Scientific
+features retain genuine Calc evaluation, including Grad input/output scaling
+because GNU Calc does not directly provide a Grad angle mode. Keyboard
+changes preserve editable fields, navigation activation and calculator Enter.
+
+Implicit equations use residual values computed by GNU Calc. Native floating
+point may interpolate contour positions and project them into the viewport.
+Disconnected contour segments use explicit breaks in the graph data; a
+bounded reader prevents unbounded native recursion. Invalid expressions and
+resource-budget errors retain the previously accepted expression, range and
+plot while reporting the failure.
+
+* Validation and operational constraints
+
+Implementation lanes use disposable source copies and private target data.
+Native tests remain hidden and do not touch the clipboard or the user's
+running calculator. Source-dependent probes and active application migration
+must run sequentially. Packaged GUI hashes must match the selected normal
+build before any bundle is treated as distributable.
+
+The per-feature evidence establishes the specified cases. Full Windows
+Calculator equivalence, physical keyboard routing and whole-window visual
+fidelity require their own acceptance evidence.
+
+* Integrated results
+
+- Conversion: 132 Microsoft real units plus two preserved compatibility
+  entries, 134 total across 12 categories. Host GNU Calc passed 308 assertions.
+  Genuine NeLisp passed the identical 308 distinct assertion IDs in 22 fresh
+  sequential batches of at most eight units, with the original 90-second
+  per-child bound. The old 300-second monolithic and 90-second whole-data
+  timeouts remain retained diagnostics. Root integration also passed the
+  64 focused cases and all 268 native From/To item receipts.
+- Scientific/programmer: 27 Host and standalone checks, five native shortcut
+  workflows and the compact secondary selector passed. Repeating the same
+  selector action works; selection returns focus to the calculator so Enter
+  does not activate navigation. The four existing Enter cases still pass.
+- Graphs: 21 Host and standalone contour assertions passed. Root native
+  circle, disconnected hyperbola and explicit-curve workflows passed. Eleven
+  additional cross-module checks cover typed pi/e, Grad expressions in the
+  contour evaluator, analytic line positions and failed-expression rollback.
+- A relocated folder bundle with a sanitized PATH verified all 3055 manifest
+  files and the normal GUI hash, then computed UK gallons, inverse Grad,
+  programmer remainder, a circle and ordinary arithmetic in one hidden
+  native session. The implicit data had 175 rows, exceeding the old reader's
+  101-row limit. No operational replay build was distributed.
+
+The running user session and shared runtime were kept unchanged. The later
+Windows idle-wait repair is measured separately in =idle-resource-fix.org=;
+feature acceptance alone does not imply acceptable idle resource usage.

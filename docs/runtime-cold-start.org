@@ -1,0 +1,34 @@
+#+TITLE: Verified optional runtime cold companion
+
+The runtime automatically discovers an adjacent =nelisp.exe.cold=. No launch
+flag is needed. The selected executable and its companion must come from the
+same build. The runtime also validates its internal image build digest.
+
+Set optional =coldSha256= alongside =sha256= in
+=target/current-runtime.json=. The companion path is always the resolved
+runtime path plus =.cold=; metadata cannot supply another image path.
+A missing companion retains the existing source-bootstrap fallback. A present
+companion with a matching runtime pin and an incorrect image hash is rejected
+before launch. Unrelated runtime overrides do not inherit the pin.
+Malformed or unreadable optional attestation records are ignored by the cold
+helper, preserving explicit runtime overrides. The selected-runtime resolver
+still rejects an invalid mandatory selection record.
+
+Packaging copies only an attested companion next to the existing portable
+=nelisp/target/nelisp.exe=. It writes the verified runtime/image hashes into
+=app/target/runtime-capabilities.json=, preserving the separately hash-gated
+=startupGcPolicy= when supported. Legacy packages without a cold image remain
+valid. Runtime capability records can also attest a companion for the portable
+fallback path without introducing an unsafe relative runtime selection.
+
+Run =tools/runtime-cold-test.ps1= plus the existing runtime selection and GC
+capability tests. The focused packaging test executes the production copy
+slice against real fixture files; it does not replace the full portable
+package and launch validation.
+
+The measured BAF76 runtime with its matching generic cold companion reached
+the actual mailbox Ready response in 11.65 seconds, versus 30.78 seconds for
+the executable alone, with the same engine source and debt-v1 startup policy.
+Private memory decreased from 303.18 MiB to 261.92 MiB. These are single-process
+samples, not a timing guarantee. Both returned =2+3=5= and stopped normally.
+This change does not create a Calc-specific initialized image.

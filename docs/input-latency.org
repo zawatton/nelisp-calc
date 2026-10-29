@@ -1,0 +1,78 @@
+#+TITLE: Calculator input and computation latency
+
+* Current boundaries
+The native input handlers enqueue tokens through send_command. They do not
+update the displayed numeric buffer optimistically. flush_command writes one
+queued token to requests.txt only when the previous token has been acknowledged.
+poll_response runs every 100 ms, consumes the response and then flushes the next
+token. The backend checks the request mailbox and sleeps 100 ms between polls.
+These waits can contribute latency even when the token performs no arithmetic.
+
+Ordinary Standard-mode digits append text. Equals invokes GNU Calc when there
+is a pending operator. Session history is published for result-producing intent;
+ordinary digit input does not publish history. Timing must separate digit text
+handling, genuine calculation, file publication and serialized queue waiting.
+
+Automated commands in the existing test driver are themselves fed at polling
+boundaries. Their overall elapsed time is not a measure of physical keyboard
+latency. Instrumented enqueue/flush/response boundaries and isolated backend
+token timings are required to separate those effects.
+
+* Results
+Two isolated Standard-mode runs each completed 19 native key-signal actions:
+12 digits, two additions, four equals and one Escape. Each finished at 1035,
+status ok, acknowledgment count 19. The first response was awaited before
+input. Sequential automation waits for each acknowledgment; the burst case
+queues two nine-key sequences separated by Escape.
+
+| Operation | Token processing median | Enqueue to GUI response median |
+| Sequential digit | 0.94 ms | 217 ms |
+| Sequential equals | 289 ms | 544 ms |
+| Burst digit | 0.60 ms | 866 ms |
+| Burst equals | 293 ms | 2281 ms |
+
+Excluding the first digit, warm digit processing medians were 0.884 ms
+(sequential, 11 samples) and 0.583 ms (burst, 11 samples). First digits took
+about 36 ms. The first sequential equals took 392 ms; later equals took
+328, 251 and 249 ms. A final burst equals reached GUI response consumption
+2593 ms after enqueue, of which its token computation was 250 ms.
+Burst queue waiting alone had a digit median of 601 ms and equals median
+1783 ms. Single-request serialization therefore makes fast typing accumulate
+delay; the user can feel input lag even before meaningful arithmetic occurs.
+
+The offscreen Cairo on_draw medians were approximately 0.6 to 1.4 ms.
+Rendering work was small compared with transport waiting and equals processing.
+Both input transport and arithmetic are material, with different priorities:
+digits are dominated by transport; equals also spends hundreds of milliseconds
+inside NeLisp's genuine Calc token handling. Optimizing redraw alone will not
+address either dominant delay. Reduce serialized input/transport waits first,
+then profile the Calc parse/evaluate/normalization path for equals.
+
+* Method and limits
+GUI enqueue, flush and consume timestamps use epoch microseconds. Backend
+start/end/publication timestamps use epoch seconds. A separate float-time
+interval brackets the original token call and excludes tracing file writes.
+It includes token dispatch and GC; it is not an isolated arithmetic-kernel
+benchmark. Millisecond/submillisecond clock resolution can produce zero values.
+Tracing I/O adds material overhead: sequential token-span medians were 16 ms
+for digits and 347 ms for equals, versus inner intervals 0.94 and 289 ms.
+The total observed times are approximate instrumented measurements, not an
+uninstrumented production benchmark.
+
+All 38 rows had nonnegative stage deltas and zero algebraic stage-sum closure
+error. A deliberately shifted GUI clock was rejected by the summary checker.
+The consume event is immediately before copying a response into GUI state;
+the recorded draw calls are explicit offscreen Cairo renders. Neither measures
+physical keyboard delivery, compositor presentation or a displayed frame.
+Startup, advanced calculations and long histories are outside these results.
+The earlier sustained-CPU report remains a separate unresolved investigation.
+
+The isolated workspace is =../.nelisp-calc-latency-20261029-a/=. Probe source
+is tools/latency-probe.ps1, tools/latency-summary.py, latency-instrument.el and
+its private mailbox copy. Runtime SHA256 was verified as BAF76F0BD7F57C3786D71B1D61F7404C4A7A815E7FB22B668A64D99389CE991B.
+Final result receipts, JSON timing rows and raw TSV traces are copied under
+=target/input-latency-evidence/=. The summary is =latency-summary.json=.
+Failed instrumentation/count-assertion attempts were excluded from final data.
+No production runtime, polling interval, calculation policy or GUI launch
+behavior was changed. Owned measurement processes were closed; no application
+was brought to the foreground, committed or pushed.

@@ -1,0 +1,85 @@
+#+TITLE: Dedicated backend startup memory policy
+
+The application-owned mailbox can initialize genuine GNU Calc with a temporary
+native allocation-debt floor of 4 MiB and a 100% live-byte ratio.  The supported
+native selectors are =nelisp--debug-switch= 30 and 31.  The ordinary Lisp
+=gc-cons-threshold= variables do not control this allocator.
+
+=nelisp-calc-initialize-owned-backend= requires both explicit ownership of the
+default policy and the launcher's =NELISP_CALC_NATIVE_GC_POLICY= value =debt-v1=.
+The launcher must publish this capability only for a verified runtime.  Missing
+or unknown capability values preserve ordinary initialization.  The generic
+=nelisp-calc-initialize= API retains the embedding process's policy.
+
+The temporary policy ends in =unwind-protect= before readiness or any request,
+on both success and failure. Zero restores the native documented defaults
+(16 MiB floor and 300% ratio). Request polling and calculation precision are
+unchanged. The policy controls allocation debt during initialization, keeping
+the genuine providers and evaluator. An embedding process with a custom
+policy must not claim default policy ownership.
+
+The launcher derives =debt-v1= only from =target/runtime-capabilities.json=
+whose =sha256= matches the executable actually selected for that launch.
+Missing, mismatched or unknown policy metadata disables the optimization.
+It overwrites any inherited policy flag for the child and restores the
+caller's environment afterward. Portable packaging copies capability
+metadata only when it matches the copied runtime. Seven focused controls
+cover absence, approval, a different binary, mutation, unknown/missing
+policy and malformed JSON. Direct engine callers do not opt into this policy.
+
+Two independently fresh matched Windows samples with the same immutable
+runtime reduced Standard startup private memory from 396--399 MiB to
+303--306 MiB, and the fourteen-request history case to approximately 303 MiB
+(over 23% reduction).  Startup collection frequency increases; measured
+initialization wall times varied from 16--20 seconds for the original and
+17--18 seconds for the temporary policy.  This is a startup memory/collection
+tradeoff, not a claim that all remaining private memory is live Lisp data.
+
+=tools/memory-stages.ps1= records explicit file-barrier stages, external private
+and working-set measurements, process CPU, elapsed time, arena and GC counters,
+exact source/runtime hashes, stderr and completion markers.  =-OwnedGc= exercises
+the actual gated wrapper.  Run baseline and candidate in separate fresh
+processes.  Internal profiling barriers perturb collection timing and must not
+be used as evidence of an end-to-end private-memory improvement.
+
+=test/native-gc-policy-test.el= checks policy restoration on success and
+initialization failure, plus the embedding, missing-capability and unknown-
+capability fallbacks.  Genuine Calc tests remain necessary after restoration.
+
+Reproduce matched measurements with the same executable in distinct fresh
+processes: run =tools/memory-stages.ps1 -Runtime PATH=, then the same command
+with =-OwnedGc=. Compare the two printed session =report.json= files using
+=python tools/memory-footprint-check.py BASELINE CANDIDATE=. The checker
+requires at least10percent lower private memory at both startup and history,
+matching runtime hashes, independent sessions, completion markers, exit0
+and empty stderr. Two old baseline reports correctly fail this check.
+Use =-Profile= only for attribution; additional barriers change peak usage.
+The first accepted pair used the equivalent diagnostic policy placement;
+the second pair exercised the actual capability-gated production wrapper.
+
+Publish =target/runtime-capabilities.json= only after validating that exact
+runtime and its policy selectors; its fields are =sha256= and
+=startupGcPolicy: "debt-v1"=. This workspace also records the accepted
+evidence hash in that metadata. A fresh source checkout without this
+ignored local capability file follows the original startup policy.
+
+The real application was restarted without activation. Its16 existing
+requests were replayed after one startup-mode request; display2/statusok,
+history and memory file hashes matched the snapshot. Over30.023s, backend
+private memory was303.2->303.3MiB, versus406.852MiB in the original live
+session (about25.5percent lower). Working set was188.8MiB; idle CPU1.04percent
+of one logical core. The normal GUI pointer was restored, and the window
+remained minimized. Shared services and runtime executables were unchanged.
+
+Hidden native converter/Grad/programmer/implicit-circle/Standard interaction
+passed. A relocated portable folder with spaces and a sanitized PATH passed
+all3057 manifest hashes, verified runtime capability, and arithmetic15.
+Native integration11, Standard and keymap prerequisites also passed; the
+ownership/restoration contract passed five checks on host and native.
+
+The300MiB-level private footprint remains substantial. The30s sample does
+not establish long-run memory stability. Full core gates were not repeated
+because this change uses existing allocation-policy APIs and leaves the
+core/frontend/provider sources unchanged. Source, evidence and criteria are
+recorded in =tools/ai/memory-footprint-progress.org=; target evidence is local
+and ignored. No commit or push was performed.

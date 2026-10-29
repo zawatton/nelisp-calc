@@ -1,0 +1,24 @@
+#+TITLE: Remove intrusive status popups and investigate post-action CPU
+
+* S1 Native status feedback
+** S1.1 Identify the status popup and reproduce native tooltip state
+evidence: target/status-feedback-evidence/status-control-dff7cbcfef294737ad4808e3ae5a9087/math.receipt sha256=B30EECFBECA913A50707105AE64098F3F00DC34628B8B3495A5AD88FCF992D26
+** S1.2 Disable canvas status tooltips while retaining visible status and calculation behavior
+evidence: target/status-feedback-acceptance.json sha256=33FF711B3E1576AE756D29DEBAC408ACB438656E702F5676D6B34D8AC9C211BE
+** S1.3 Hidden native calculation and error feedback complete without a status tooltip
+evidence: target/status-feedback-evidence/status-candidate-6216df727bf6494eb772cf2c5a3ae16a/math.receipt sha256=2243D15F9FD675F6508F31FD02EC8A1E28D8D915FDFAF54F5BC2388D6F9628DF
+evidence: target/status-feedback-evidence/status-candidate-6216df727bf6494eb772cf2c5a3ae16a/error.receipt sha256=BD4ADA2C86F2EF8E5C73E8DF87BBDC3EABF8AC34D2CA281BC9C58A572FFADCEF
+evidence: target/status-feedback-evidence/status-ownership-bfb9a34baff5475c89ba8fbde3574330/theme-feedback.txt sha256=D0A35CEF6E700C1C35DB8A998CA6DFE41C1799BD0D5E0CA7D6BA5E9DADE5BAA3
+
+* S2 Action CPU and live integration
+** S2.1 Attribute action CPU separately to GUI/backend and record post-action idle behavior
+evidence: target/status-feedback-evidence/action-cpu-65f66f2356d74753958805d728c5cd7e/measurement.json sha256=230462A63AA364AB562AE64CF69E3115C818F8E0697F769FCDC37AE519B191D8
+evidence: target/post-action-process-attribution.json sha256=BFE516C03A469D1A513A98C2169B3B1926BC2D226F517E0CF06EEAC581888C1D
+evidence: target/status-cpu-passive-observation.json sha256=BAC747719DF0306CD8617DD22B28523A2E5A7CFA83358C0789BC5F43E34DD7C4
+#+NOTE: Measurement/attribution only. The user's sustained-high-load process is not confirmed; this is not a resolution claim.
+** S2.2 Integrate reviewed changes while preserving earlier memory and CPU fixes
+evidence: target/status-feedback-preservation.json sha256=404BFEF793BFB4F35A4B0F3C1CCF716E5A507D83E7399D71638ED9506B117510
+** S2.3 Confirm the reported high-CPU process and verify resolution after a state-preserving restart
+cmd: python -c 'import json; from pathlib import Path; r=json.loads(Path("target/status-feedback-cpu-resolution.json").read_text()); assert r["confirmedReportedProcess"] and r["resolved"]'
+evidence: target/status-feedback-live-acceptance.json sha256=73064E2CC322A962018087501610C6A0BADA9F8052919E96978FB56BD7F9EBDC
+#+NOTE: Criterion strengthened after user clarified sustained load. Restart/state preservation passed, but PID confirmation and reported-condition resolution remain failing. Count remains6.

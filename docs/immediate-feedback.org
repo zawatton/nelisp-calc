@@ -1,0 +1,79 @@
+#+TITLE: Immediate Standard entry, genuine numeric arithmetic and cold startup
+
+* User-visible behavior
+Standard-mode numeric entry no longer waits for the backend. Digits, decimal
+point, backspace, C and CE edit a bounded local text preview. GNU Calc remains
+the authority for calculations. Older acknowledgments cannot replace newer
+entry text; the absolute barrier accounts for externally replayed requests.
+C resets arithmetic intent, while CE preserves pending and repeat operators.
+Opaque operations conservatively defer prediction until their state is known.
+Scientific and other modes retain their authoritative response behavior.
+
+Strict unsigned decimal binary operands use GNU math-read-number, the genuine
+GNU expression tree, and the existing shared normalization/formatting/error
+path. Custom syntax, negative/scientific/fraction/compound forms and unsupported
+input use the normal GNU parser. The copied customization snapshot detects
+in-place list and string changes. This does not replace Calc with host floats.
+Warm same-process 123+456 medians were 154.3 to 6.1 ms; the integrated cold-image
+run also passed all 223 checks and showed single-digit millisecond direct calls.
+These are computation intervals, not complete displayed-result latency.
+
+* Entry evidence
+The final native fixture has four cases: key and mouse callbacks, each with an
+ordinary path and a backend acknowledgment offset of 100. Each ordinary path
+retains 69 receipts, including startup, partial responses, error/opaque/fresh
+states, bounded buffer behavior, no-op/repeated equals and the two CE cases.
+The original source fails the first immediate-digit check. An intermediate CE
+implementation fails both new CE transitions (34 instead of 4), and was fixed.
+
+The callback updates preview state in under a millisecond in the observed
+fixtures. Rendering is measured by allocating the real GTK drawing area and
+explicitly invoking its actual Cairo on_draw callback. This verifies rendered
+content while the authoritative backend value is still zero. It does not time
+physical keyboard delivery, a scheduled GTK frame or compositor presentation.
+The PNG entry-12345.png was inspected. Production queues a redraw immediately;
+no active poll or backend response is needed to make the preview available.
+
+* Startup evidence and installation
+The selected application runtime executable was missing the matching generic
+cold companion produced by the same build. An isolated copy of that exact pair
+reduced actual mailbox Ready from 30.78 to 11.65 seconds and private memory
+from 303.18 to 261.92 MiB, using the same prior engine and debt-v1 policy.
+The executable itself was not rebuilt or changed. Its SHA256 remains BAF76F0BD7F57C3786D71B1D61F7404C4A7A815E7FB22B668A64D99389CE991B;
+the companion is 70D383FEAD1195082633AD2C0249312B2E4667C28B22CCFA904C1512A919218A.
+The final integrated mailbox measured Ready at 10.88 seconds in a later run.
+Cold initialization therefore remains substantial; entry can be shown before
+readiness, but calculation results require the backend to finish initialization.
+
+The companion was copied atomically next to the app-owned executable and pinned
+in its local selection metadata. Runtime resolution checks a present pinned
+companion; a missing image retains the old source-loading fallback. Portable
+packages include only verified companions and merge cold/GC capability hashes.
+Unchanged selection6 and GC7 checks plus cold20 checks passed; the old package
+copy path fails its cold-image control. Malformed optional metadata does not
+break an explicit unrelated runtime override.
+
+* Integration and resources
+The integrated source passed native entry4, transport12, direct Calc223 and
+panel8 checks. Navigation4 and Return/KPEnter4 passed before the final CE-only
+guard; the final entry regression and portable CE calculation cover that guard.
+The portable bundle was relocated to a path containing a space, all 3058 manifest
+entries were verified, and real Delete-key CE followed by arithmetic returned
+7 with exactly nine acknowledgments. The first portable probe incorrectly sent
+literal command ce, which is treated as eval:ce by the general command driver;
+its result34 was retained as a fixture failure. Using the actual Delete-key
+signal corrected the probe without changing expected arithmetic or production.
+
+The original settled-idle contract (3-second warmup, 15-second sample) passed:
+1.874 percent of one core, private memory 253.53 MiB, growth0.047 MiB, result5,
+clean exit and no stderr. GUI diagnostics retain30polls/3seconds and zero idle
+redraws. An additional Ready-timing experiment intentionally sampled immediately
+after startup with no warmup for five seconds; it recorded Ready12.33seconds but
+failed the steady CPU bound at5.295percent. That pass=false artifact is preserved
+as immediate-final-ready.log; it is not a settled-idle acceptance result. The
+existing warmup/sample/5percent threshold was not weakened or replaced.
+
+The application was closed and remains closed. The normal versioned pointer
+selects the new build for the next launch. The portable artifact is local; no
+commit, push, shared-service restart or foreground activation was performed.
+The earlier sustained-CPU report remains separate and unresolved.

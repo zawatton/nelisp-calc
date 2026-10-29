@@ -1,0 +1,27 @@
+#+TITLE: Bound calculator idle work after request history
+
+* S1 Bounded mailbox polling
+** S1.1 Reproduce backlog idle overhead and verify required runtime file operations
+evidence: target/mailbox-idle-evidence/seed-manifest.json sha256=BCDD4E76121319B98DFB574CDC2F5472DB03C6210C5457B9353A2723C829E63D
+evidence: target/mailbox-idle-evidence/idle-resource-726813c1375644c2b6916694ed5f1b1b/measurement.json sha256=5F62C416B392E589BEF47B349353F37CAF4A8D2533329344CB15706EBC1FCE9E
+** S1.2 Preserve exactly-once command processing and partial-line behavior with focused negative controls
+evidence: target/mailbox-idle-Host.log sha256=3C9A174DB551868878417849313B3DF80BF3C3526A239B017CDBAF2BF7DC46AA
+evidence: target/mailbox-idle-Standalone.log sha256=C60EE869DD9957D6F5954FE6AA30EDE14D12CEA092FB07CA677F32596EF06897
+evidence: target/mailbox-idle-evidence/mailbox-negative.log sha256=8B158F8C64AA0830702EFB4C8343746AD8B529E3151822C33623D623BB0A9AEB
+#+NOTE: Thirteen assertions pass on both substrates. Exact old source rejects the unchanged-read invariant. No existing tests were removed.
+** S1.3 Actual Calc mailbox with request history meets unchanged CPU and memory limits
+cmd: python -c 'import json; from pathlib import Path; assert json.loads(Path("target/mailbox-idle-acceptance.json").read_text(encoding="utf-8-sig"))["pass"]'
+evidence: target/mailbox-idle-acceptance.json sha256=9E4B8170847AE78773E632269D16B0F8DFBE16B94523F45D3F40DF63EDEC8A1D
+#+NOTE: Fourteen matching setup requests plus100 backlog;3s warmup then30s measured, unchanged100ms interval and5percent CPU limit. Earlier failing10s samples remain archived.
+
+* S2 Integration and live application
+** S2.1 Integrate reviewed source while preserving prior work and record supported protocol limits
+evidence: target/mailbox-idle-preservation.json sha256=2DD96E2A0A7BD903D617BA2530102D3C8E147F61B2C77FE75DFFEF9FDEC98BBB
+evidence: lisp/nelisp-calc-mailbox.el sha256=672FA4FA595B0B0BA87FEC84E5CEA8FCE80386B54C78EB8B9E3723BD57627673
+#+NOTE: Only the startup initializer changed for the memory policy. Poll/cache/idle bodies are unchanged; the latest live CPU sample is recorded in memory-footprint-progress.org.
+** S2.2 Hidden native mode/calculation interaction succeeds with the optimized mailbox
+evidence: target/mailbox-idle-native-acceptance.json sha256=9DB84AA9CE474974B637B0A70901320B77917CDAA26C7EFD87B62421199BEDE9
+** S2.3 Restart without activation preserves live state and meets the CPU target with real history
+cmd: python -c 'import json; from pathlib import Path; r=json.loads(Path("target/mailbox-idle-live-acceptance.json").read_text(encoding="utf-8-sig")); assert r["pass"] and r["oneCorePercent"] <= 5'
+evidence: target/mailbox-idle-live-acceptance.json sha256=D8D4F22117B104A7757CED931BBBBF952F103AD803768627B7F117652F01342B
+#+NOTE: Actual live session, preserved display/history/memory, minimized nonforeground window,30s CPU/private sample. Shared runtimes unchanged.

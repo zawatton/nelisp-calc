@@ -1,0 +1,30 @@
+#+TITLE: Immediate entry feedback and low-latency arithmetic
+
+* S1 Implementation
+** S1.1 Reflect ordinary numeric entry immediately without changing calculation authority
+evidence: src/nelisp-calc-gui.el sha256=985F878CC5A0B28108A0D9DA6C4E4B6D813D64BE4AF5EA5D53C37D40B64AD500
+evidence: build.el sha256=5B4321A02ED99EA42F62D690E086E511956811891137399AF6D73B9C87257D8A
+evidence: target/immediate-entry-final.log sha256=BD3F707E1D73E9D3291761CEC304890CC0A6BF87324E14150B2AD0B8D01905CB
+** S1.2 Remove demonstrated generic parsing cost from safe arithmetic using genuine Calc
+evidence: lisp/nelisp-calc-engine.el sha256=24D7F2B47486F05376D1333A70C67C2B0FD3ABFA7E6B8C826C56246FCF7C5016
+evidence: target/immediate-direct-native.log sha256=4ED77214F06DE554BC21368D6C1F7F7F8D50CAD57F17DBCF14AC917A555A31BA
+evidence: target/direct-negative-final.log sha256=1270E5FB5E2C71E2F1C2FBC45AA0AEC0D0FD221CBEF2447FD5F3323BC5699D93
+** S1.3 Native entry, ordering, error and arithmetic regressions pass end to end
+evidence: target/immediate-entry-final.log sha256=BD3F707E1D73E9D3291761CEC304890CC0A6BF87324E14150B2AD0B8D01905CB
+evidence: target/immediate-transport.log sha256=4EA2DEA717EB0409666D892782CD22814FCA1CA0E1FB5662F65F70FFC024BCE3
+evidence: target/immediate-portable-acceptance.json sha256=523D1A8AB5858398E925FEF504C65E0FD47C11E6FA930A60E9C23EAECECC7FE4
+
+* S2 Verification and application
+** S2.1 Measure visible-entry feedback and result latency with matched controls
+#+NOTE: Entry measurements are state update and explicit allocated Cairo rendering, not compositor presentation. Numeric timings are computation-only matched pairs; cold startup is measured separately. Six criteria are retained.
+evidence: target/immediate-feedback-acceptance.json sha256=ce3c47c547b1382c196b475c234ad1876a9ad887adf5fdeb360fff206025f1dc
+evidence: docs/immediate-feedback.org sha256=96B1AD992C03C3A45D65ECE7236C2B303B5FA613BF27C3D78CA4D671E4C47478
+** S2.2 Preserve idle resources, source changes and default fallback semantics
+#+NOTE: Settled idle uses the existing 3-second warmup and 15-second/5percent acceptance contract. The additional immediate 5-second/zero-warmup startup diagnostic remains pass=false at5.295percent and is preserved, not used as settled-idle evidence.
+evidence: target/immediate-steady-final.log sha256=1CA0CDDC61DDE213F69A4B11D6BA167C66DAC4761D7CCBB1765835B4F48C38F6
+evidence: target/immediate-feedback-acceptance.json sha256=ce3c47c547b1382c196b475c234ad1876a9ad887adf5fdeb360fff206025f1dc
+evidence: target/immediate-final-ready.log sha256=4CC88AF578CB24E18F42D2EE05E149AB27F79D3ACF6EB649197C2D840801BC5D
+** S2.3 Select a verified native build without foreground activation
+evidence: target/immediate-final-build.log sha256=BB728B71E991A4B7AEC5D403AFD65767B6A93DCC0F51FBD884F4E816117E67C8
+evidence: target/immediate-portable-acceptance.json sha256=523D1A8AB5858398E925FEF504C65E0FD47C11E6FA930A60E9C23EAECECC7FE4
+evidence: target/immediate-cold-tests.log sha256=9CC11239F89B12F7A206BC34CB5BE2BB4CF8FB03E75A25AD725D8A104048DFAA

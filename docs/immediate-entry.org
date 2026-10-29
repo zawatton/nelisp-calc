@@ -1,0 +1,99 @@
+#+TITLE: Immediate Standard entry echo
+
+* Contract
+The native GUI edits decimal entry text synchronously in the input callback.
+GNU Calc remains the sole arithmetic evaluator. The authoritative response
+buffer remains unchanged until a backend response arrives. Drawing, redraw
+comparison and Copy use =entry_display=, which selects the local entry only
+while its bounded preview is valid. No clipboard operation was tested.
+
+Context slots 8880/8888/8896/8904/8912 hold a separately allocated 256-byte
+entry buffer pointer, visibility, editing knowledge, causal command barrier,
+and Standard arithmetic intent. They fit within the existing 9216-byte context
+and do not overlap existing production slots through 8808 or private 8832.
+At most 255 entry bytes plus NUL are written. Overflow disables prediction;
+queue overflow and transport fail-stop force authoritative display.
+
+Digits, decimal point, backspace, C and CE are text edits in Standard mode.
+Duplicate decimal points are ignored. Backspace after a fresh result is a
+no-op. Arithmetic operators and arithmetic/repeated equals make the next digit
+fresh; equals with no prior arithmetic intent preserves the backend's existing
+editing semantics. Mode commands clear the arithmetic-intent marker.
+C resets arithmetic intent. CE clears only the entry and preserves pending or
+repeat arithmetic intent, matching the backend; equals after CE therefore
+still makes the next digit fresh when an arithmetic operator exists.
+
+Sign, percent, functions, recall and other opaque commands do not predict
+their numeric result. Existing typed text remains visible while such a result
+is pending; subsequent digits wait for authoritative reconciliation instead of
+appending to an unknown value. Scientific and other modes use authoritative
+display. A future mode-specific editor needs its own proven text semantics.
+
+The barrier uses absolute =ack + outstanding + queued= counts, including an
+external acknowledgment offset. Unsolicited text changes or count jumps discard
+freshness knowledge instead of guessing whether the next digit appends.
+An accepted response older than the local command barrier cannot replace a
+newer entry. The final response releases the preview and restores authoritative
+display. ERROR is shown immediately even if an older arithmetic operation
+failed while newer input remains queued. Digits can recover through the normal
+backend reset behavior. Initial readiness and initial count-zero publications
+cannot erase digits entered while startup is still pending.
+
+* Verification
+Run =pwsh -NoProfile -File tools/entry-feedback-probe.ps1=.
+The probe builds an isolated native fixture from the actual source and build
+generator, drives real GTK key-controller and click-gesture signals, and draws
+through the actual =on_draw= on an allocated GtkDrawingArea. The owned window
+is mapped offscreen without activation using the existing header diagnostic;
+the native widget snapshot also verifies foreground ownership is unchanged.
+No backend process runs in this fixture. Responses are deliberately withheld,
+then controlled partial/final publications exercise the actual polling body.
+
+The fixture has 69 receipts per input path, including startup =12345=, initial
+and partial acknowledgments, final reconciliation, rapid =1+2= then =4=,
+errors/recovery, opaque sign/percent, dot/backspace/CE, no-op equals, repeated
+equals, CE with pending and repeat arithmetic, recall, mode transitions,
+queue overflow, the 255-byte limit and
+fail-stop. Two additional key/mouse cases start from acknowledgment 100:
+=1,2= shows =12=, partial acknowledgment 101 retains =12=, and final 102
+reconciles. Thus the suite has four native cases. Its source-copy
+instrumentation is diagnostic only. The old source
+gets a read-only display helper, so it compiles but must fail the first
+immediate-entry assertion. The existing transport fixture retains all twelve
+original assertions; only entry-specific dependencies are isolated with stubs.
+
+Verified final native fixture artifact:
+=target/entry-feedback/363a32031a754f26b4f4b3579571aceb/=
+- Key callback to preview: maximum 549 us for =12345=.
+- Key allocated on_draw: maximum 1408 us.
+- Mouse callback to preview: maximum 483 us.
+- Mouse allocated on_draw: maximum 1269 us.
+- Backend display remained =0= throughout these five input callbacks.
+- Old-source control failed receipt 1: display =0=, expected =1=.
+  Artifact: =target/entry-feedback/e25603c544f64c78a40759c6428e9edb/=.
+- The previous immediate-entry source (43ABBF2A...) fails the added CE
+  pending/repeat assertion. Artifact:
+  =target/entry-feedback/b47c04f027c64d559b00ff651fb7048d/=.
+
+These measure callback completion and actual offscreen allocated drawing after
+initial GTK layout/font setup. They do not claim a physical compositor frame,
+OS keyboard injection, or an uninitialized first-ever font-cache latency.
+No perpetual draw timer was added; idle polling remains 100 ms.
+The =entry-12345.png= artifact was visually inspected and shows the typed value
+while the backend still displays zero. Existing native navigation and Enter
+suites passed with their original four cases each, using the app-owned BAF76
+runtime and copied =debt-v1= capability metadata. These interaction suites ran
+before the final conservative unsolicited-publication check; the final native
+entry and twelve-case transport suites covered that source revision.
+
+* Caller audit and scope
+The available MCP tool set exposes no code-context/dependency/index APIs
+(zero matching tools); the healthy shared connection was not restarted.
+The scoped syntactic audit covered =send_command= callers in the GUI source,
+keyboard controls and the enclosing =calc-advanced-controls= / drawing build
+generator, plus =poll_response=, =redraw_if_changed=, =on_copy= and =main=.
+Generated DSL functions are not top-level host Elisp definitions. This is a
+syntactic caller audit, not a claim of semantic completeness from an index.
+Only GUI source/build, this probe, the narrow transport-fixture dependency
+update and this document were edited. Runtime, mailbox, session and engine
+sources remain untouched.

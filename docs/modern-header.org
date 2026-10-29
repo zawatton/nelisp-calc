@@ -1,0 +1,44 @@
+#+TITLE: Native header and navigation design
+
+* Implementation
+The calculator uses a GtkHeaderBar with native window controls and a draggable
+title region. The navigation row combines a hamburger menu, the current mode,
+and symbolic History, Memory and Settings buttons with accessible names and
+tooltips. Text labels remain available when symbolic icons cannot be loaded.
+Light and dark palettes coordinate the titlebar, rounded buttons, hover/focus
+states and separator. The former duplicated canvas mode heading was removed;
+the result display, keypad, graph and calculation backend remain unchanged.
+
+* Verification
+Actual GTK child snapshots were inspected in both themes: Standard 381 x 593
+and Scientific 400 x 719. The native probe uses an offscreen, nonactivating
+window and fresh artifact directories. It does not capture the user's desktop.
+Native navigation and calculation tests passed in four cases; four mouse/key
+Return and keypad Enter cases also passed. Native header controls are enabled;
+physical dragging and maximize interactions were not exercised because the
+user requested that the application never take foreground focus during work.
+
+The operational restart maps the GTK window before minimizing it without
+activation. Minimizing before mapping a client-side header had produced a GTK
+surface warning; the revised order passed a minimized launch and graceful
+close with empty stderr. Ordinary launches clear the header diagnostic flag,
+and environment restoration removes absent variables instead of creating
+empty diagnostic flags.
+
+The live application was restarted minimized, replaying 70 acknowledged
+requests and preserving the display, history and memory. The restart snapshot
+ended in Standard mode. The normal versioned executable pointer was restored
+after the temporary operational launch. The following 15-second backend
+sample averaged 1.56 percent of one core, with private memory 304.4 to 304.5 MiB.
+This observation does not resolve the separately reported sustained CPU issue.
+The application runtime, GC policy and mailbox optimizations were retained.
+
+* Evidence
+- target/modern-header-native-c6cd1a99f0944df78d8da53d6bafcb69/receipt.json
+- target/header-navigation-final.log
+- target/header-enter-final.log
+- target/modern-header-minimized-acceptance.json
+- target/modern-header-live-acceptance.json
+- tools/ai/modern-header-progress.org
+
+No commit, push or shared service restart was performed.

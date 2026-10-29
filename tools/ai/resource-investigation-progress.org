@@ -1,0 +1,14 @@
+#+TITLE: Diagnose calculator idle resource usage
+
+* S1 Resource attribution and causes
+** S1.1 Attribute measured CPU and resident/private memory to the user's GUI/backend separately from tests and shared services
+evidence: target/resource-investigation-first.json sha256=2A1DA4CB4F69CCF0BC96AAB1F1341027103C4B201E80D8267F71D3F5523D1B6E
+evidence: target/resource-live-idle-confirmed.json sha256=BCA540AFACA34098D9D8D972A8A18CE1834431D701638402FD32A0DF69779FB0
+** S1.2 Compare bounded wait and idle-allocation behavior against stock Emacs and inspect the exact runtime provider
+evidence: target/nanosleep-provider-proof.log sha256=C6CECD3383E5D19A2B47504624198A82CE6CB1A76872DB62055CC61DE242322B
+evidence: target/idle-cpu-comparison-corrected.json sha256=7E320A7AEA08D163F60848DB50463344627261661D4E72D9566EB5A1A2877B22
+** S1.3 Reproduce idle mailbox and GUI behavior in isolated processes and identify supported mitigations without changing the user's calculation
+evidence: target/os-blocking-control-proof.json sha256=5E8EF5BF2FA855448B10135C66E30BA353A4B4CBA72D670BC1FCAA884BB19A4F
+evidence: target/idle-gc-proof.log sha256=73608316F6C93A20901F81F8281D593BB2C2BCE6D942B14BACF4482CF27FFD95
+evidence: target/resource-gui-steady-control.json sha256=14D4AAC8AB46F5A6B04CA07D8FA3752D139D5B2AF49700DD41F7984530047201
+evidence: docs/resource-usage-investigation.org sha256=19338C48DF666EDDDFC37852A9B3C972BA5405B845BAD9917EB30FFE8BA4825C

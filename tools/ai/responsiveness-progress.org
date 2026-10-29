@@ -1,0 +1,28 @@
+#+TITLE: Improve calculator input and calculation responsiveness
+
+* S1 Implementation
+** S1.1 Reduce serialized input waits while preserving ordered acknowledgments
+evidence: src/nelisp-calc-gui.el sha256=985F878CC5A0B28108A0D9DA6C4E4B6D813D64BE4AF5EA5D53C37D40B64AD500
+#+NOTE: Immediate entry extends the transport fix. Dedicated final native entry4 and unchanged transport12 pass; historical timing rows below remain the earlier comparison.
+evidence: target/immediate-entry-final.log sha256=BD3F707E1D73E9D3291761CEC304890CC0A6BF87324E14150B2AD0B8D01905CB
+evidence: target/responsiveness-focused.log sha256=2E14FFABE8BE07FFAEFEA08AC38004426D73DFE494435BBBBA5720F2E30D069F
+** S1.2 Profile and reduce redundant genuine Calc work where demonstrated
+evidence: lisp/nelisp-calc-engine.el sha256=24D7F2B47486F05376D1333A70C67C2B0FD3ABFA7E6B8C826C56246FCF7C5016
+evidence: target/immediate-direct-native.log sha256=4ED77214F06DE554BC21368D6C1F7F7F8D50CAD57F17DBCF14AC917A555A31BA
+evidence: target/responsiveness-computation-evidence/paired.log sha256=6D5024538EA85B59300A5F076A12542D216C2FEFAAD6E681C768767B9D85B709
+evidence: target/responsiveness-computation-evidence/trailing-render.log sha256=EDDFD8ABFA9339AC3413252CADBA13BDC99816380F592B89D4462DC4017157CC
+** S1.3 Native input and calculation regressions pass end to end
+evidence: target/responsiveness-navigation.log sha256=A4D0F9A4ABCB389960F1AB623F2B62280B0E0AF127978BDF6FCA5306729CE454
+evidence: target/responsiveness-enter.log sha256=38632EAB8E8504BF316E5F74E6FE89A575C0084F1D4C7AC4ECE381B63F15C164
+
+* S2 Verification and application
+** S2.1 Measure before and after sequential and burst response latency
+evidence: target/responsiveness-integrated-paired.json sha256=10240F7D099301B850DAEF92E6075C415E0872B25FD9EFA9D2B6C227AD79A384
+** S2.2 Preserve idle CPU, memory and prior changes
+evidence: target/responsiveness-acceptance.json sha256=1567cb0978344632f937445d4885f4b05d8e08afc058c7950210990d0a2681ac
+evidence: target/responsiveness-after-gui-idle.log sha256=B8BB7B541D44ED12B4DFBDE109A05D439276F047D103DB665A7BE21D449B0EE8
+evidence: target/responsiveness-after-backend-idle.log sha256=9BD3436577F5AB854FD9712C036EA0F25BEC15510DD3F988231644B90C401502
+** S2.3 Build and apply the verified application without activation
+evidence: target/responsiveness-normal-build.log sha256=EEFC3588263C0D367B025485E1135CCCA8043BD1313F9A126328ED5D4ADA1489
+evidence: target/responsiveness-acceptance.json sha256=1567cb0978344632f937445d4885f4b05d8e08afc058c7950210990d0a2681ac
+evidence: target/submenu-native-08330c33b577497e820c81c4638a26c4/receipt.json sha256=420260FFB9F79E7B7D4A3E73FBDE1D0A04550249DC58DEC0C916A2C89D16D8D1

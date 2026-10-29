@@ -1,0 +1,82 @@
+#+TITLE: Windows idle CPU and memory investigation
+#+DATE: 2026-10-29
+
+* Measured attribution
+
+The real calculator session was distinguished from isolated tests, the shared
+Anvil runtime and the Japanese input runtime using PID, parent PID and command
+line. A CPU percentage here means a fraction of one logical CPU, rather than
+Windows Task Manager's percentage of the whole machine.
+
+| Process | Idle CPU | Private memory |
+|---------+----------+----------------|
+| Running Calc backend | approximately one core | 2045--2091 MiB |
+| Running native GUI | approximately 7% of one core | approximately 162 MiB |
+| Shared Anvil and input runtimes | approximately 0% | separate processes |
+
+The running backend's request count remained unchanged across the initial
+idle sample. Later user actions were observed separately; no diagnostic
+command was injected into that process and no application state was changed.
+
+* Confirmed primary CPU cause
+
+=scripts/nelisp-standalone-build.el= in the sibling NeLisp repository defines
+the Windows =nl_os_nanosleep= provider to return =-38= (ENOSYS). A direct
+probe of the current runtime requested 50 ms and returned =-38= immediately.
+
+=nelisp-calc-mailbox.el= calls =accept-process-output nil 0.05= between polls.
+The actual provider is =nelisp-process-adapter--wait=. It repeatedly polls
+the clock and invokes =nelisp-async-core--nanosleep= until the deadline.
+The latter ignores the unsuccessful native wait result. Wall time therefore
+advances correctly, but the process spins instead of sleeping.
+
+An explicit ready-file barrier excluded process startup from the CPU samples:
+
+| Isolated control after initialization | CPU / one core | Private memory over one second |
+|--------------------------------------+----------------+--------------------------------|
+| Bare NeLisp, timed waits | 100.8% | 233.1 to 238.1 MiB |
+| Calc-loaded NeLisp, timed waits | 101.6% | 364.7 to 366.0 MiB |
+| Stock GNU Emacs, same timed waits | 0.0% | 33.7 to 33.7 MiB |
+
+Sampling granularity can produce readings slightly above 100%. A separate
+Calc-loaded control blocked on a native sleeping child through the existing
+Windows process wait: CPU was 0.0%, private memory stayed 364.2 MiB, and the
+one-second wait took 1.035 seconds. This is an experimental control, not an
+implemented production workaround.
+
+* Memory evidence and limits
+
+Idle allocation growth reproduces without mailbox file reads or plotting,
+so those features are not required to trigger it. The asynchronous wait also
+allocates a fresh 16-byte timespec for every attempted sleep. The fast failed
+wait loop amplifies allocation pressure.
+
+In an isolated Calc-loaded probe, explicit garbage collection reduced reported
+live bytes to 25,961,032 while the arena's used-byte high-water value remained
+190,456,872. Reclaiming Lisp objects does not establish that their backing
+memory is returned to Windows. The observed two-GiB process therefore must
+not be described as two GiB of live calculator values, or as a proven leak
+in a particular allocation type. Quantifying raw scratch retention, allocator
+high-water behavior and long-lived roots remains separate work.
+
+* Secondary GUI cost
+
+The native =poll_response= callback schedules =gtk_widget_queue_draw= and
+updates the tooltip unconditionally every 100 ms, even when the response did
+not change. The displayed GUI's idle CPU is much smaller than the backend's,
+but response-driven redraw and fewer redundant property updates are clear
+candidates. Hidden startup samples were excluded from steady-state claims.
+
+* Repair order
+
+1. Implement a real Windows wait behind the existing native nanosleep
+   boundary, with timed-wait and low-idle-CPU acceptance checks.
+2. Handle an unsupported/error wait explicitly instead of silently spinning;
+   reuse or release the temporary timespec storage with a defined lifetime.
+3. Redraw and refresh native controls only after state changes or active
+   gestures. Measure the displayed GUI separately from initialization.
+4. Recheck long-running private memory, GC live bytes and Windows working set
+   after the idle spin is fixed before choosing further allocator changes.
+
+The current runtime and the user's session were not patched or restarted by
+this investigation. Shared Anvil and input-method services were not restarted.
